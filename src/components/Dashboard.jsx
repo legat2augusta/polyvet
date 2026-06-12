@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import CatCard from './CatCard';
+import CatsMap from './CatsMap';
 import { Search, Filter, AlertCircle, PlusCircle } from 'lucide-react';
 
 const ALMATY_DISTRICTS = [
@@ -80,6 +81,14 @@ export default function Dashboard({ cats, onScan, onNavigateToReport }) {
             Подать объявление
           </button>
         </div>
+      </div>
+
+      {/* Map View */}
+      <div style={{ marginBottom: '40px', textAlign: 'left' }}>
+        <h3 style={{ fontSize: '1.4rem', marginBottom: '16px', color: 'var(--text-primary)' }}>
+          Интерактивная карта Алматы
+        </h3>
+        <CatsMap cats={filteredCats} onScan={onScan} />
       </div>
 
       {/* Search and Filters Bar */}

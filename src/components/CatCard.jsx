@@ -33,7 +33,7 @@ export default function CatCard({ cat, onScan }) {
         background: '#0c0f1d'
       }}>
         <img 
-          src={cat.photo} 
+          src={cat.photo_url || cat.photo} 
           alt={cat.breed || 'Кошка'} 
           style={{
             width: '100%',

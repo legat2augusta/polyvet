@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Camera, ArrowLeft, Upload, Sparkles, Check } from 'lucide-react';
+import { Camera, ArrowLeft, Upload, Sparkles, Check, MapPin, Loader } from 'lucide-react';
+import CatsMap from './CatsMap';
+import { supabase } from '../supabaseClient';
 
 const ALMATY_DISTRICTS = [
   'Бостандыкский',
@@ -40,6 +42,11 @@ export default function ReportForm({ onSubmit, onCancel }) {
   const [contactPhone, setContactPhone] = useState('');
   const [photo, setPhoto] = useState(DEMO_PHOTOS[0].url); // Default to first demo photo
   const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  
+  // Default coordinates for Almaty (center)
+  const [position, setPosition] = useState([43.2389, 76.8897]);
+  
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
@@ -59,27 +66,63 @@ export default function ReportForm({ onSubmit, onCancel }) {
     setPhoto(url);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!photo) {
       alert('Пожалуйста, добавьте фотографию кошки.');
       return;
     }
 
-    const newCat = {
-      id: Date.now(),
-      status,
-      breed: breed.trim() || 'Беспородная',
-      color,
-      district,
-      date,
-      description: description.trim(),
-      contactName: contactName.trim() || 'Аноним',
-      contactPhone: contactPhone.trim(),
-      photo
-    };
+    setSubmitting(true);
+    try {
+      let finalPhotoUrl = photo;
 
-    onSubmit(newCat);
+      // If user uploaded a new local file (represented as base64 string), upload to Supabase Storage
+      if (photo.startsWith('data:image/')) {
+        const response = await fetch(photo);
+        const blob = await response.blob();
+        
+        const fileExt = blob.type.split('/')[1] || 'png';
+        const fileName = `cats/${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('cat-photos')
+          .upload(fileName, blob, {
+            contentType: blob.type
+          });
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('cat-photos')
+          .getPublicUrl(fileName);
+
+        finalPhotoUrl = publicUrl;
+      }
+
+      const newCat = {
+        status,
+        breed: breed.trim() || 'Беспородная',
+        color,
+        district,
+        date,
+        description: description.trim(),
+        contactName: contactName.trim() || 'Аноним',
+        contactPhone: contactPhone.trim(),
+        photo_url: finalPhotoUrl,
+        latitude: position[0],
+        longitude: position[1]
+      };
+
+      await onSubmit(newCat);
+    } catch (err) {
+      console.error('Ошибка при отправке объявления:', err);
+      alert('Не удалось загрузить фото или данные. Проверьте правильность подключения к Supabase и права доступа Bucket. Ошибка: ' + err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -89,6 +132,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
         className="btn btn-secondary" 
         onClick={onCancel}
         style={{ marginBottom: '24px', alignSelf: 'flex-start' }}
+        disabled={submitting}
       >
         <ArrowLeft size={16} />
         Назад на главную
@@ -97,18 +141,19 @@ export default function ReportForm({ onSubmit, onCancel }) {
       <div className="glass-card" style={{ padding: '32px', borderRadius: '24px', textAlign: 'left' }}>
         <h2 style={{ marginBottom: '8px', fontSize: '1.8rem' }}>Подать новое объявление</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-          Заполните данные о кошке. После публикации наша ИИ-система просканирует базу данных и покажет возможные совпадения.
+          Заполните данные о кошке. После публикации данные отправятся в облачную БД Supabase, и система проверит совпадения.
         </p>
 
         <form onSubmit={handleSubmit}>
           {/* Status lost/found Toggle */}
-          <div className="input-group">
+          <div className="input-group" style={{ marginBottom: '24px' }}>
             <span className="input-label">Каков статус питомца?</span>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 type="button"
                 onClick={() => setStatus('lost')}
                 className="btn"
+                disabled={submitting}
                 style={{
                   flex: 1,
                   background: status === 'lost' ? 'var(--status-lost)' : 'rgba(255, 255, 255, 0.05)',
@@ -123,6 +168,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 type="button"
                 onClick={() => setStatus('found')}
                 className="btn"
+                disabled={submitting}
                 style={{
                   flex: 1,
                   background: status === 'found' ? 'var(--status-found)' : 'rgba(255, 255, 255, 0.05)',
@@ -147,13 +193,13 @@ export default function ReportForm({ onSubmit, onCancel }) {
             }}>
               {/* Main Photo Dropzone */}
               <div 
-                onClick={() => fileInputRef.current.click()}
+                onClick={() => !submitting && fileInputRef.current.click()}
                 style={{
                   border: '2px dashed rgba(255, 255, 255, 0.15)',
                   borderRadius: '16px',
                   padding: '24px',
                   textAlign: 'center',
-                  cursor: 'pointer',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
                   background: 'rgba(255,255,255,0.02)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -165,8 +211,8 @@ export default function ReportForm({ onSubmit, onCancel }) {
                   position: 'relative',
                   overflow: 'hidden'
                 }}
-                onMouseOver={(e) => e.currentTarget.style.borderColor = 'var(--primary)'}
-                onMouseOut={(e) => e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)'}
+                onMouseOver={(e) => !submitting && (e.currentTarget.style.borderColor = 'var(--primary)')}
+                onMouseOut={(e) => !submitting && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)')}
               >
                 <input 
                   type="file" 
@@ -174,6 +220,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                   onChange={handleFileChange} 
                   accept="image/*" 
                   style={{ display: 'none' }} 
+                  disabled={submitting}
                 />
                 
                 {photo ? (
@@ -238,6 +285,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                     <button
                       key={demo.name}
                       type="button"
+                      disabled={submitting}
                       onClick={() => handleSelectDemo(demo.url)}
                       style={{
                         padding: '6px 12px',
@@ -246,7 +294,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                         border: `1px solid ${photo === demo.url ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
                         color: photo === demo.url ? '#fff' : 'var(--text-secondary)',
                         fontSize: '0.8rem',
-                        cursor: 'pointer',
+                        cursor: submitting ? 'not-allowed' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
@@ -259,6 +307,21 @@ export default function ReportForm({ onSubmit, onCancel }) {
                   ))}
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Interactive Map Coordinates Picker */}
+          <div className="input-group" style={{ marginBottom: '24px' }}>
+            <span className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <MapPin size={16} color="var(--primary)" />
+              Укажите примерное местоположение на карте Алматы
+            </span>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+              Кликните по карте в месте, где это произошло. Маркер зафиксирует координаты.
+            </p>
+            <CatsMap selectMode={true} position={position} setPosition={setPosition} />
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+              Координаты: {position[0].toFixed(5)}, {position[1].toFixed(5)}
             </div>
           </div>
 
@@ -277,6 +340,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 value={breed}
                 onChange={(e) => setBreed(e.target.value)}
                 className="form-input"
+                disabled={submitting}
               />
             </div>
 
@@ -287,6 +351,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
                 className="form-select"
+                disabled={submitting}
               >
                 {COLORS.map(c => (
                   <option key={c} value={c}>{c}</option>
@@ -308,6 +373,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 value={district}
                 onChange={(e) => setDistrict(e.target.value)}
                 className="form-select"
+                disabled={submitting}
               >
                 {ALMATY_DISTRICTS.map(d => (
                   <option key={d} value={d}>{d} район</option>
@@ -323,6 +389,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
                 className="form-input"
+                disabled={submitting}
               />
             </div>
           </div>
@@ -336,6 +403,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="form-textarea"
+              disabled={submitting}
             />
           </div>
 
@@ -360,12 +428,13 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 onChange={(e) => setContactName(e.target.value)}
                 className="form-input"
                 required
+                disabled={submitting}
               />
             </div>
 
             {/* Phone */}
             <div className="input-group">
-              <span className="input-label">Номер телефона / Мессенджер</span>
+              <span className="input-label">Номер телефона (для WhatsApp)</span>
               <input 
                 type="text" 
                 placeholder="+7 (7xx) xxx-xx-xx"
@@ -373,18 +442,38 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 onChange={(e) => setContactPhone(e.target.value)}
                 className="form-input"
                 required
+                disabled={submitting}
               />
             </div>
           </div>
 
           {/* Submit Buttons */}
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+            <button 
+              type="button" 
+              className="btn btn-secondary" 
+              onClick={onCancel}
+              disabled={submitting}
+            >
               Отмена
             </button>
-            <button type="submit" className="btn btn-primary" style={{ minWidth: '240px' }}>
-              <Sparkles size={18} />
-              Опубликовать и найти (ИИ)
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              style={{ minWidth: '240px' }}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader size={18} className="animate-spin" />
+                  Публикация...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={18} />
+                  Опубликовать и найти (ИИ)
+                </>
+              )}
             </button>
           </div>
         </form>

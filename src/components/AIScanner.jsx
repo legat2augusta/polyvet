@@ -247,7 +247,7 @@ export default function AIScanner({ targetCat, cats, onClose }) {
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                           {/* Match Photo */}
                           <div style={{ width: '90px', height: '90px', borderRadius: '12px', overflow: 'hidden', flexShrink: 0 }}>
-                            <img src={match.photo} alt={match.breed} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={match.photo_url || match.photo} alt={match.breed} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           </div>
                           
                           {/* Details */}
@@ -292,11 +292,11 @@ export default function AIScanner({ targetCat, cats, onClose }) {
                           gap: '12px'
                         }}>
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                            <strong>Автор:</strong> {match.contactName} • <span style={{ color: 'var(--text-muted)' }}>{match.contactPhone}</span>
+                            <strong>Автор:</strong> {match.contact_name || match.contactName} • <span style={{ color: 'var(--text-muted)' }}>{match.contact_phone || match.contactPhone}</span>
                           </div>
                           
                           <a 
-                            href={`https://wa.me/${match.contactPhone.replace(/[^0-9]/g, '')}`} 
+                            href={`https://wa.me/${(match.contact_phone || match.contactPhone).replace(/[^0-9]/g, '')}`} 
                             target="_blank" 
                             rel="noreferrer"
                             className="btn btn-primary" 
