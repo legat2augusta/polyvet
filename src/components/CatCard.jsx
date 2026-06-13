@@ -1,9 +1,58 @@
 import React, { useState } from 'react';
 import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { getTranslation } from '../utils/translations';
 
-export default function CatCard({ cat, onScan, onDelete }) {
+const COLOR_KEYS = {
+  'Рыжий': 'colorGinger',
+  'Черный': 'colorBlack',
+  'Белый': 'colorWhite',
+  'Серый': 'colorGrey',
+  'Трехцветный': 'colorCalico',
+  'Сиамский': 'colorSiamese'
+};
+
+const DISTRICT_KEYS = {
+  'Бостандыкский': 'districtBostandyk',
+  'Медеуский': 'districtMedeu',
+  'Алмалинский': 'districtAlmaly',
+  'Ауэзовский': 'districtAuezov',
+  'Алатауский': 'districtAlatau',
+  'Жетысуский': 'districtZhetysu',
+  'Турксибский': 'districtTurksib',
+  'Наурызбайский': 'districtNauryzbai'
+};
+
+export default function CatCard({ cat, onScan, onDelete, lang }) {
   const isLost = cat.status === 'lost';
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [translatedDescription, setTranslatedDescription] = useState(null);
+  const [showTranslation, setShowTranslation] = useState(false);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  const handleTranslate = async (e) => {
+    e.stopPropagation();
+    if (translatedDescription) {
+      setShowTranslation(!showTranslation);
+      return;
+    }
+
+    setIsTranslating(true);
+    try {
+      const fromLang = 'ru';
+      const toLang = lang === 'kk' ? 'kk' : 'ru';
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(cat.description)}&langpair=${fromLang}|${toLang}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const result = data.responseData.translatedText;
+      setTranslatedDescription(result);
+      setShowTranslation(true);
+    } catch (err) {
+      console.error('Translation error:', err);
+      alert('Не удалось выполнить перевод.');
+    } finally {
+      setIsTranslating(false);
+    }
+  };
 
   // Extract all non-empty photos for the carousel
   const cardPhotos = [
@@ -43,7 +92,7 @@ export default function CatCard({ cat, onScan, onDelete }) {
         zIndex: 10
       }}>
         <span className={`badge ${isLost ? 'badge-lost' : 'badge-found'}`}>
-          {isLost ? 'Пропал' : 'Найден'}
+          {isLost ? getTranslation('statusLost', lang) : getTranslation('statusFound', lang)}
         </span>
       </div>
 
@@ -62,11 +111,11 @@ export default function CatCard({ cat, onScan, onDelete }) {
             })();
 
             if (localPasscode) {
-              if (window.confirm('Вы действительно хотите удалить это объявление?')) {
+              if (window.confirm(getTranslation('cardDeleteConfirm', lang))) {
                 onDelete(cat.id, localPasscode);
               }
             } else {
-              const enteredCode = window.prompt('Введите 4-значный код удаления (выданный при публикации) или пароль администратора:');
+              const enteredCode = window.prompt(getTranslation('cardDeletePrompt', lang));
               if (enteredCode !== null) {
                 onDelete(cat.id, enteredCode.trim());
               }
@@ -228,25 +277,48 @@ export default function CatCard({ cat, onScan, onDelete }) {
           justifyContent: 'space-between',
           alignItems: 'baseline'
         }}>
-          {cat.breed || 'Беспородная'}
+          {cat.breed === 'Беспородная' || !cat.breed ? getTranslation('cardBreedDefault', lang) : cat.breed}
           <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)' }}>
-            {cat.color}
+            {COLOR_KEYS[cat.color] ? getTranslation(COLOR_KEYS[cat.color], lang) : cat.color}
           </span>
         </h4>
 
-        {/* Description preview */}
-        <p style={{
-          fontSize: '0.9rem',
-          color: 'var(--text-secondary)',
-          marginBottom: '16px',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-          minHeight: '2.8em'
-        }}>
-          {cat.description || 'Особые приметы не указаны.'}
-        </p>
+        {/* Description preview & translation toggle */}
+        <div style={{ marginBottom: '16px' }}>
+          <p style={{
+            fontSize: '0.9rem',
+            color: 'var(--text-secondary)',
+            margin: 0,
+            display: '-webkit-box',
+            WebkitLineClamp: 3,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            minHeight: '2.8em'
+          }}>
+            {showTranslation && translatedDescription ? translatedDescription : (cat.description || getTranslation('descNotSpecified', lang))}
+          </p>
+          {cat.description && lang === 'kk' && (
+            <button 
+              onClick={handleTranslate}
+              disabled={isTranslating}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--primary)',
+                fontSize: '0.75rem',
+                cursor: 'pointer',
+                padding: '4px 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                textDecoration: 'underline',
+                marginTop: '4px'
+              }}
+            >
+              {isTranslating ? getTranslation('cardTranslating', lang) : (showTranslation ? getTranslation('cardTranslateBackBtn', lang) : getTranslation('cardTranslateBtn', lang))}
+            </button>
+          )}
+        </div>
 
         {/* Location & Date */}
         <div style={{
@@ -261,7 +333,7 @@ export default function CatCard({ cat, onScan, onDelete }) {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <MapPin size={14} color="var(--primary)" />
-            <span>{cat.district} район</span>
+            <span>{DISTRICT_KEYS[cat.district] ? getTranslation(DISTRICT_KEYS[cat.district], lang) : cat.district} {getTranslation('cardDistrict', lang)}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Calendar size={14} />
@@ -287,8 +359,8 @@ export default function CatCard({ cat, onScan, onDelete }) {
                     justifyContent: 'space-between',
                     alignItems: 'center'
                   }}>
-                    <span>Код удаления: <strong style={{ letterSpacing: '0.05em' }}>{localPasscode}</strong></span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(только у вас)</span>
+                    <span>{getTranslation('cardPasscodeBadge', lang)} <strong style={{ letterSpacing: '0.05em' }}>{localPasscode}</strong></span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{getTranslation('cardPasscodeOnlyYou', lang)}</span>
                   </div>
                 );
               }
@@ -305,7 +377,7 @@ export default function CatCard({ cat, onScan, onDelete }) {
             onClick={() => onScan(cat)}
           >
             <Cpu size={16} />
-            Найти совпадения (ИИ)
+            {getTranslation('cardScanBtn', lang)}
           </button>
         </div>
       </div>

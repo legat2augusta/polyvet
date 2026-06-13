@@ -1,8 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Cpu, ArrowLeft, RefreshCw, CheckCircle, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { calculateVectorSimilarity } from '../utils/imageAI';
+import { getTranslation } from '../utils/translations';
 
-export default function AIScanner({ targetCat, cats, onClose }) {
+const COLOR_KEYS = {
+  'Рыжий': 'colorGinger',
+  'Черный': 'colorBlack',
+  'Белый': 'colorWhite',
+  'Серый': 'colorGrey',
+  'Трехцветный': 'colorCalico',
+  'Сиамский': 'colorSiamese'
+};
+
+const DISTRICT_KEYS = {
+  'Бостандыкский': 'districtBostandyk',
+  'Медеуский': 'districtMedeu',
+  'Алмалинский': 'districtAlmaly',
+  'Ауэзовский': 'districtAuezov',
+  'Алатауский': 'districtAlatau',
+  'Жетысуский': 'districtZhetysu',
+  'Турксибский': 'districtTurksib',
+  'Наурызбайский': 'districtNauryzbai'
+};
+
+export default function AIScanner({ targetCat, cats, onClose, lang }) {
   const [scanStep, setScanStep] = useState(0);
   const [logMessages, setLogMessages] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -60,35 +81,36 @@ export default function AIScanner({ targetCat, cats, onClose }) {
 
     // Construct steps array dynamically
     const dynamicSteps = [
-      { text: 'Инициализация модели распознавания образов (ResNet50 + Vision Transformer)...', delay: 800, photoIndex: 0 },
-      { text: `Обнаружение объекта на фото... Уверенность детектора мордочки: ${faceConfidence}%`, delay: 800, photoIndex: 0 }
+      { text: getTranslation('scanLogInit', lang), delay: 800, photoIndex: 0 },
+      { text: getTranslation('scanLogFaceDetection', lang).replace('{faceConfidence}', faceConfidence), delay: 800, photoIndex: 0 }
     ];
 
     // If confidence is low, inject warning log
     if (faceConfidence < 60) {
       dynamicSteps.push({ 
-        text: `[!] ПРЕДУПРЕЖДЕНИЕ: Низкая уверенность распознавания мордочки кошки. Точность ИИ-сопоставления снижена. Пожалуйста, убедитесь, что фото содержит четкое изображение питомца спереди.`, 
+        text: getTranslation('scanLogFaceWarning', lang), 
         delay: 1500,
         isWarning: true,
         photoIndex: 0
       });
     }
 
+    const localizedColor = COLOR_KEYS[targetCat.color] ? getTranslation(COLOR_KEYS[targetCat.color], lang) : targetCat.color;
     dynamicSteps.push(
-      { text: `Анализ окраса и структуры шерсти (Обнаружен основной цвет: ${targetCat.color})...`, delay: 1000, photoIndex: 0 }
+      { text: getTranslation('scanLogColor', lang).replace('{color}', localizedColor), delay: 1000, photoIndex: 0 }
     );
 
     // If there are multiple photos, add steps to scan them dynamically
     if (targetPhotos.length > 1) {
       dynamicSteps.push({
-        text: `Анализ ракурса 2 (Выделение контуров тела и дополнительных признаков)...`,
+        text: getTranslation('scanLogPhoto2', lang),
         delay: 1000,
         photoIndex: 1
       });
     }
     if (targetPhotos.length > 2) {
       dynamicSteps.push({
-        text: `Анализ ракурса 3 (Проверка особых примет, пятен и структуры шерсти)...`,
+        text: getTranslation('scanLogPhoto3', lang),
         delay: 1000,
         photoIndex: 2
       });
@@ -96,17 +118,18 @@ export default function AIScanner({ targetCat, cats, onClose }) {
 
     if (targetPhotos.length > 1) {
       dynamicSteps.push({
-        text: `Слияние многоракурсных дескрипторов (Multi-view Feature Fusion: ${targetPhotos.length} фото в единый эмбеддинг)...`,
+        text: getTranslation('scanLogFusion', lang).replace('{count}', targetPhotos.length),
         delay: 1000,
         photoIndex: 0
       });
     }
 
+    const localizedDistrict = DISTRICT_KEYS[targetCat.district] ? getTranslation(DISTRICT_KEYS[targetCat.district], lang) : targetCat.district;
     dynamicSteps.push(
-      { text: 'Извлечение вектора визуальных признаков (512-мерный дескриптор эмбеддинга)...', delay: 900 },
-      { text: `Фильтрация базы данных по геопозиции (${targetCat.district} район и смежные)...`, delay: 800 },
-      { text: 'Вычисление косинусного сходства (Cosine Similarity) по всей базе данных...', delay: 700 },
-      { text: 'Сравнение завершено. Анализ результатов...', delay: 500 }
+      { text: getTranslation('scanLogExtract', lang), delay: 900 },
+      { text: getTranslation('scanLogGeo', lang).replace('{district}', localizedDistrict), delay: 800 },
+      { text: getTranslation('scanLogCosine', lang), delay: 700 },
+      { text: getTranslation('scanLogComplete', lang), delay: 500 }
     );
 
     runNextStep(dynamicSteps);
@@ -295,24 +318,26 @@ export default function AIScanner({ targetCat, cats, onClose }) {
 
           <div style={{ marginTop: '20px', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-              <strong style={{ color: 'var(--text-primary)', fontSize: '1.2rem' }}>{targetCat.breed}</strong>
+              <strong style={{ color: 'var(--text-primary)', fontSize: '1.2rem' }}>
+                {targetCat.breed === 'Беспородная' || !targetCat.breed ? getTranslation('cardBreedDefault', lang) : targetCat.breed}
+              </strong>
               <span className={`badge ${targetCat.status === 'lost' ? 'badge-lost' : 'badge-found'}`}>
-                {targetCat.status === 'lost' ? 'Пропал' : 'Найден'}
+                {targetCat.status === 'lost' ? getTranslation('statusLost', lang) : getTranslation('statusFound', lang)}
               </span>
             </div>
             <p style={{ fontSize: '0.95rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>
-              <strong>Окрас:</strong> {targetCat.color}
+              <strong>{getTranslation('labelColor', lang)}</strong> {COLOR_KEYS[targetCat.color] ? getTranslation(COLOR_KEYS[targetCat.color], lang) : targetCat.color}
             </p>
             <p style={{ fontSize: '0.95rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>
-              <strong>Район:</strong> {targetCat.district} район
+              <strong>{getTranslation('labelDistrict', lang)}</strong> {DISTRICT_KEYS[targetCat.district] ? getTranslation(DISTRICT_KEYS[targetCat.district], lang) : targetCat.district} {getTranslation('cardDistrict', lang)}
             </p>
             {targetPhotos.length > 1 && (
               <p style={{ fontSize: '0.85rem', marginBottom: '8px', color: 'var(--scan-accent)' }}>
-                <strong>Загружено ракурсов:</strong> {targetPhotos.length}
+                <strong>{getTranslation('labelAngles', lang)}</strong> {targetPhotos.length}
               </p>
             )}
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: '12px' }}>
-              {targetCat.description || 'Описание не указано.'}
+              {targetCat.description || getTranslation('descNotSpecified', lang)}
             </p>
           </div>
         </div>
@@ -339,7 +364,7 @@ export default function AIScanner({ targetCat, cats, onClose }) {
           }}>
             <div style={{ color: 'var(--scan-accent)', borderBottom: '1px solid rgba(16, 185, 129, 0.2)', paddingBottom: '6px', marginBottom: '6px', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
               <span>AI_SCAN_CONSOLE v1.1.0</span>
-              <span>{isScanning ? 'СТАТУС: АНАЛИЗ...' : 'СТАТУС: ГОТОВО'}</span>
+              <span>{isScanning ? getTranslation('statusScanning', lang) : getTranslation('statusDone', lang)}</span>
             </div>
             
             {logMessages.map((msg, idx) => (
@@ -357,7 +382,7 @@ export default function AIScanner({ targetCat, cats, onClose }) {
             {isScanning && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', marginTop: '4px' }}>
                 <RefreshCw size={12} className="animate-spin" />
-                <span>Вычисление метрик близости...</span>
+                <span>{getTranslation('statusComputing', lang)}</span>
               </div>
             )}
           </div>
@@ -367,7 +392,7 @@ export default function AIScanner({ targetCat, cats, onClose }) {
             <div style={{ textAlign: 'left' }}>
               <h3 style={{ fontSize: '1.4rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <CheckCircle size={20} color="var(--scan-accent)" />
-                Потенциальные совпадения
+                {getTranslation('scanResultsTitle', lang)}
               </h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -385,14 +410,14 @@ export default function AIScanner({ targetCat, cats, onClose }) {
                         key={match.id} 
                         className="glass-card" 
                         style={{
-                          padding: '20px', 
-                          borderRadius: '16px', 
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '16px',
-                          background: 'rgba(17, 24, 39, 0.4)',
-                          borderColor: isHighMatch ? 'rgba(16, 185, 129, 0.4)' : 'var(--card-border)',
-                          boxShadow: isHighMatch ? 'rgba(16, 185, 129, 0.05) 0 4px 20px' : 'none'
+                           padding: '20px', 
+                           borderRadius: '16px', 
+                           display: 'flex',
+                           flexDirection: 'column',
+                           gap: '16px',
+                           background: 'rgba(17, 24, 39, 0.4)',
+                           borderColor: isHighMatch ? 'rgba(16, 185, 129, 0.4)' : 'var(--card-border)',
+                           boxShadow: isHighMatch ? 'rgba(16, 185, 129, 0.05) 0 4px 20px' : 'none'
                         }}
                       >
                         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -404,7 +429,9 @@ export default function AIScanner({ targetCat, cats, onClose }) {
                           {/* Details */}
                           <div style={{ flexGrow: 1 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '4px' }}>
-                              <h4 style={{ fontSize: '1.1rem' }}>{match.breed}</h4>
+                              <h4 style={{ fontSize: '1.1rem' }}>
+                                {match.breed === 'Беспородная' || !match.breed ? getTranslation('cardBreedDefault', lang) : match.breed}
+                              </h4>
                               <span style={{ 
                                 fontSize: '0.85rem', 
                                 fontWeight: 'bold', 
@@ -414,19 +441,19 @@ export default function AIScanner({ targetCat, cats, onClose }) {
                                 borderRadius: '6px',
                                 border: `1px solid ${scoreColor}40`
                               }}>
-                                {match.matchScore}% совпадение
+                                {match.matchScore}% {getTranslation('matchSuffix', lang)}
                               </span>
                             </div>
                             
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                              <strong>Окрас:</strong> {match.color} • <strong>Район:</strong> {match.district}
+                              <strong>{getTranslation('labelColor', lang)}</strong> {COLOR_KEYS[match.color] ? getTranslation(COLOR_KEYS[match.color], lang) : match.color} • <strong>{getTranslation('labelDistrict', lang)}</strong> {DISTRICT_KEYS[match.district] ? getTranslation(DISTRICT_KEYS[match.district], lang) : match.district} {getTranslation('cardDistrict', lang)}
                             </p>
                             
                             <div style={{ display: 'flex', gap: '12px', fontSize: '0.8rem', alignItems: 'center' }}>
                               <span className={`badge ${match.status === 'lost' ? 'badge-lost' : 'badge-found'}`} style={{ fontSize: '0.65rem' }}>
-                                {match.status === 'lost' ? 'Пропал' : 'Найден'}
+                                {match.status === 'lost' ? getTranslation('statusLost', lang) : getTranslation('statusFound', lang)}
                               </span>
-                              <span style={{ color: 'var(--text-muted)' }}>Дата: {match.date}</span>
+                              <span style={{ color: 'var(--text-muted)' }}>{getTranslation('labelDate', lang)} {match.date}</span>
                             </div>
                           </div>
                         </div>
@@ -443,7 +470,7 @@ export default function AIScanner({ targetCat, cats, onClose }) {
                           gap: '12px'
                         }}>
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                            <strong>Автор:</strong> {match.contact_name || match.contactName} • <span style={{ color: 'var(--text-muted)' }}>{match.contact_phone || match.contactPhone}</span>
+                            <strong>{getTranslation('labelAuthor', lang)}</strong> {match.contact_name || match.contactName || 'Аноним'} • <span style={{ color: 'var(--text-muted)' }}>{match.contact_phone || match.contactPhone}</span>
                           </div>
                           
                           <a 
@@ -453,7 +480,7 @@ export default function AIScanner({ targetCat, cats, onClose }) {
                             className="btn btn-primary" 
                             style={{ padding: '8px 14px', fontSize: '0.8rem', borderRadius: '8px', gap: '4px' }}
                           >
-                            <Phone size={14} /> Написать
+                            <Phone size={14} /> {getTranslation('scanWriteBtn', lang)}
                           </a>
                         </div>
                       </div>
@@ -461,7 +488,7 @@ export default function AIScanner({ targetCat, cats, onClose }) {
                   })
                 ) : (
                   <div className="glass-card" style={{ padding: '32px', textAlign: 'center', color: 'var(--text-secondary)' }}>
-                    Не найдено подходящих объявлений с сходством более 40% в базе.
+                    {getTranslation('scanNoResults', lang)}
                   </div>
                 )}
               </div>

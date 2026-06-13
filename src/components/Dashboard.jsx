@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import CatCard from './CatCard';
 import CatsMap from './CatsMap';
 import { Search, Filter, AlertCircle, PlusCircle, Heart } from 'lucide-react';
+import { getTranslation } from '../utils/translations';
 
 const ALMATY_DISTRICTS = [
   'Бостандыкский',
@@ -23,7 +24,27 @@ const COLORS = [
   'Сиамский'
 ];
 
-export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }) {
+const DISTRICT_KEYS = {
+  'Бостандыкский': 'districtBostandyk',
+  'Медеуский': 'districtMedeu',
+  'Алмалинский': 'districtAlmaly',
+  'Ауэзовский': 'districtAuezov',
+  'Алатауский': 'districtAlatau',
+  'Жетысуский': 'districtZhetysu',
+  'Турксибский': 'districtTurksib',
+  'Наурызбайский': 'districtNauryzbai'
+};
+
+const COLOR_KEYS = {
+  'Рыжий': 'colorGinger',
+  'Черный': 'colorBlack',
+  'Белый': 'colorWhite',
+  'Серый': 'colorGrey',
+  'Трехцветный': 'colorCalico',
+  'Сиамский': 'colorSiamese'
+};
+
+export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, lang }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -80,15 +101,14 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
           pointerEvents: 'none'
         }}></div>
 
-        <h1 style={{ marginBottom: '16px', fontSize: '2.5rem' }}>Поможем вернуть питомца домой</h1>
+        <h1 style={{ marginBottom: '16px', fontSize: '2.5rem' }}>{getTranslation('introTitle', lang)}</h1>
         <p style={{ maxWidth: '650px', margin: '0 auto 24px', color: 'var(--text-secondary)', fontSize: '1.05rem' }}>
-          Единая интерактивная база пропавших и найденных кошек в Алматы.
-          Наша интеллектуальная система автоматически сопоставляет новые фотографии с базой данных, помогая хозяевам быстрее находить своих любимцев.
+          {getTranslation('introSub', lang)}
         </p>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
           <button className="btn btn-primary" onClick={onNavigateToReport}>
             <PlusCircle size={18} />
-            Подать объявление
+            {getTranslation('navAdd', lang)}
           </button>
         </div>
       </div>
@@ -96,9 +116,9 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
       {/* Map View */}
       <div style={{ marginBottom: '40px', textAlign: 'left' }}>
         <h3 style={{ fontSize: '1.4rem', marginBottom: '16px', color: 'var(--text-primary)' }}>
-          Интерактивная карта Алматы
+          {getTranslation('mapTitle', lang)}
         </h3>
-        <CatsMap cats={filteredCats} onScan={onScan} />
+        <CatsMap cats={filteredCats} onScan={onScan} lang={lang} />
       </div>
 
       {/* Search and Filters Bar */}
@@ -115,7 +135,7 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
             </span>
             <input 
               type="text" 
-              placeholder="Поиск по приметам, породе, окрасу..."
+              placeholder={getTranslation('searchPlaceholder', lang)}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="form-input"
@@ -130,9 +150,9 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
               onChange={(e) => setSelectedDistrict(e.target.value)}
               className="form-select"
             >
-              <option value="">Все районы</option>
+              <option value="">{getTranslation('allDistricts', lang)}</option>
               {ALMATY_DISTRICTS.map(d => (
-                <option key={d} value={d}>{d} район</option>
+                <option key={d} value={d}>{getTranslation(DISTRICT_KEYS[d], lang)} {getTranslation('formDistrictText', lang)}</option>
               ))}
             </select>
           </div>
@@ -151,7 +171,7 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
             onClick={() => setShowOnlyMyPosts(!showOnlyMyPosts)}
           >
             <Heart size={18} color={showOnlyMyPosts ? 'var(--primary)' : 'var(--text-secondary)'} />
-            Мои объявления
+            {getTranslation('myAdsBtn', lang)}
           </button>
 
           {/* Toggle Advanced Filters */}
@@ -161,7 +181,7 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter size={18} />
-            Фильтры
+            {getTranslation('filterBtn', lang)}
           </button>
         </div>
 
@@ -178,29 +198,29 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
           }}>
             {/* Status Filter */}
             <div className="input-group">
-              <span className="input-label">Статус</span>
+              <span className="input-label">{getTranslation('statusFilter', lang)}</span>
               <select 
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 className="form-select"
               >
-                <option value="">Все</option>
-                <option value="lost">Пропал</option>
-                <option value="found">Найден</option>
+                <option value="">{getTranslation('statusAll', lang)}</option>
+                <option value="lost">{getTranslation('statusLost', lang)}</option>
+                <option value="found">{getTranslation('statusFound', lang)}</option>
               </select>
             </div>
 
             {/* Color Filter */}
             <div className="input-group">
-              <span className="input-label">Основной окрас</span>
+              <span className="input-label">{getTranslation('colorFilter', lang)}</span>
               <select 
                 value={selectedColor}
                 onChange={(e) => setSelectedColor(e.target.value)}
                 className="form-select"
               >
-                <option value="">Любой окрас</option>
+                <option value="">{getTranslation('colorAny', lang)}</option>
                 {COLORS.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>{getTranslation(COLOR_KEYS[c], lang)}</option>
                 ))}
               </select>
             </div>
@@ -211,10 +231,10 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
       {/* Grid Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h3 style={{ fontSize: '1.5rem', color: 'var(--text-primary)' }}>
-          {searchTerm || selectedDistrict || selectedStatus || selectedColor ? 'Результаты фильтрации' : 'Все объявления'}
+          {searchTerm || selectedDistrict || selectedStatus || selectedColor ? getTranslation('resultsTitle', lang) : getTranslation('allAdsTitle', lang)}
         </h3>
         <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Найдено: {filteredCats.length}
+          {getTranslation('foundCount', lang)} {filteredCats.length}
         </span>
       </div>
 
@@ -222,7 +242,7 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
       {filteredCats.length > 0 ? (
         <div className="cats-grid">
           {filteredCats.map(cat => (
-            <CatCard key={cat.id} cat={cat} onScan={onScan} onDelete={onDelete} />
+            <CatCard key={cat.id} cat={cat} onScan={onScan} onDelete={onDelete} lang={lang} />
           ))}
         </div>
       ) : (
@@ -236,9 +256,9 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
           gap: '16px'
         }}>
           <AlertCircle size={48} color="var(--primary)" />
-          <h4 style={{ color: 'var(--text-primary)', fontSize: '1.2rem' }}>Ничего не найдено</h4>
+          <h4 style={{ color: 'var(--text-primary)', fontSize: '1.2rem' }}>{getTranslation('notFoundTitle', lang)}</h4>
           <p style={{ maxWidth: '400px' }}>
-            Попробуйте сбросить фильтры или изменить поисковый запрос. Возможно, объявление с такими характеристиками еще не добавлено.
+            {getTranslation('notFoundSub', lang)}
           </p>
         </div>
       )}

@@ -3,6 +3,7 @@ import { Camera, ArrowLeft, Upload, Sparkles, Check, MapPin, Loader, X } from 'l
 import CatsMap from './CatsMap';
 import { supabase } from '../supabaseClient';
 import { compressImage, extractImageEmbedding } from '../utils/imageAI';
+import { getTranslation } from '../utils/translations';
 
 const ALMATY_DISTRICTS = [
   'Бостандыкский',
@@ -32,7 +33,35 @@ const DEMO_PHOTOS = [
   { name: 'Сиамский', url: '/assets/cats/siamese.png' }
 ];
 
-export default function ReportForm({ onSubmit, onCancel }) {
+const DISTRICT_KEYS = {
+  'Бостандыкский': 'districtBostandyk',
+  'Медеуский': 'districtMedeu',
+  'Алмалинский': 'districtAlmaly',
+  'Ауэзовский': 'districtAuezov',
+  'Алатауский': 'districtAlatau',
+  'Жетысуский': 'districtZhetysu',
+  'Турксибский': 'districtTurksib',
+  'Наурызбайский': 'districtNauryzbai'
+};
+
+const COLOR_KEYS = {
+  'Рыжий': 'colorGinger',
+  'Черный': 'colorBlack',
+  'Белый': 'colorWhite',
+  'Серый': 'colorGrey',
+  'Трехцветный': 'colorCalico',
+  'Сиамский': 'colorSiamese'
+};
+
+const DEMO_KEYS = {
+  'Рыжий': 'formDemoNameGinger',
+  'Черный': 'formDemoNameBlack',
+  'Бело-серый': 'formDemoNameWhiteGrey',
+  'Трехцветная': 'formDemoNameCalico',
+  'Сиамский': 'formDemoNameSiamese'
+};
+
+export default function ReportForm({ onSubmit, onCancel, lang }) {
   const [status, setStatus] = useState('lost');
   const [breed, setBreed] = useState('');
   const [color, setColor] = useState('Рыжий');
@@ -103,7 +132,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
     const availableSlots = 3 - photos.length;
     
     if (selectedFiles.length > availableSlots) {
-      alert(`Вы можете добавить еще максимум ${availableSlots} фото.`);
+      alert(getTranslation('formPhotosLimit', lang).replace('{slots}', availableSlots));
     }
 
     const filesToUpload = selectedFiles.slice(0, availableSlots);
@@ -130,12 +159,12 @@ export default function ReportForm({ onSubmit, onCancel }) {
 
   const handleSelectDemo = (url) => {
     if (photos.length >= 3) {
-      alert('Максимально можно загрузить до 3-х фотографий.');
+      alert(getTranslation('formPhotosLimitMax', lang));
       return;
     }
     // Check if already exists in selection to avoid duplicates
     if (photos.includes(url)) {
-      alert('Это фото уже добавлено.');
+      alert(getTranslation('formPhotosDup', lang));
       return;
     }
     setPhotos(prev => [...prev, url]);
@@ -148,7 +177,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (photos.length === 0) {
-      alert('Пожалуйста, добавьте хотя бы одну фотографию кошки.');
+      alert(getTranslation('formPhotoRequired', lang));
       return;
     }
 
@@ -218,12 +247,12 @@ export default function ReportForm({ onSubmit, onCancel }) {
         passcode: passcode // Save the passcode in DB
       };
 
-      alert(`Объявление успешно опубликовано!\n\nКод для удаления с других устройств: ${passcode}\n(На этом устройстве удаление будет происходить автоматически)`);
+      alert(getTranslation('formSuccessAlert', lang).replace('{passcode}', passcode));
 
       await onSubmit(newCat);
     } catch (err) {
       console.error('Ошибка при отправке объявления:', err);
-      alert('Не удалось загрузить фото или данные. Ошибка: ' + err.message);
+      alert(getTranslation('formSubmitError', lang) + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -239,19 +268,19 @@ export default function ReportForm({ onSubmit, onCancel }) {
         disabled={submitting}
       >
         <ArrowLeft size={16} />
-        Назад на главную
+        {getTranslation('formBackBtn', lang)}
       </button>
 
       <div className="glass-card" style={{ padding: '32px', borderRadius: '24px', textAlign: 'left' }}>
-        <h2 style={{ marginBottom: '8px', fontSize: '1.8rem' }}>Подать новое объявление</h2>
+        <h2 style={{ marginBottom: '8px', fontSize: '1.8rem' }}>{getTranslation('formTitle', lang)}</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-          Заполните данные о кошке. Вы можете загрузить до 3-х разных фотографий (например, с разных ракурсов).
+          {getTranslation('formSub', lang)}
         </p>
 
         <form onSubmit={handleSubmit}>
           {/* Status lost/found Toggle */}
           <div className="input-group" style={{ marginBottom: '24px' }}>
-            <span className="input-label">Каков статус питомца?</span>
+            <span className="input-label">{getTranslation('formStatusLabel', lang)}</span>
             <div style={{ display: 'flex', gap: '12px' }}>
               <button
                 type="button"
@@ -266,7 +295,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                   boxShadow: status === 'lost' ? '0 4px 14px rgba(239, 68, 68, 0.4)' : 'none'
                 }}
               >
-                Я потерял кошку
+                {getTranslation('formStatusLostBtn', lang)}
               </button>
               <button
                 type="button"
@@ -281,14 +310,14 @@ export default function ReportForm({ onSubmit, onCancel }) {
                   boxShadow: status === 'found' ? '0 4px 14px rgba(16, 185, 129, 0.4)' : 'none'
                 }}
               >
-                Я нашел чужую кошку
+                {getTranslation('formStatusFoundBtn', lang)}
               </button>
             </div>
           </div>
 
           {/* Photo upload block */}
           <div className="input-group" style={{ marginBottom: '24px' }}>
-            <span className="input-label">Фотографии кошки (максимум 3 ракурса)</span>
+            <span className="input-label">{getTranslation('formPhotosLabel', lang)}</span>
             
             <div style={{
               display: 'grid',
@@ -327,7 +356,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                       borderRadius: '4px',
                       textTransform: 'uppercase'
                     }}>
-                      Главная
+                      {getTranslation('photoMain', lang)}
                     </div>
                   )}
                   <button
@@ -389,7 +418,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                   ) : (
                     <>
                       <Upload size={20} color="var(--text-secondary)" />
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Загрузить фото</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{getTranslation('formUploadBtn', lang)}</span>
                     </>
                   )}
                 </div>
@@ -399,7 +428,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
             {/* Demo Photos Quick Select */}
             <div>
               <span className="input-label" style={{ fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>
-                Добавить готовый образец для тестирования:
+                {getTranslation('formDemoTitle', lang)}
               </span>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {DEMO_PHOTOS.map((demo) => {
@@ -426,7 +455,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                       }}
                     >
                       {isSelected && <Check size={12} color="var(--primary)" />}
-                      {demo.name}
+                      {getTranslation(DEMO_KEYS[demo.name], lang)}
                     </button>
                   );
                 })}
@@ -438,14 +467,14 @@ export default function ReportForm({ onSubmit, onCancel }) {
           <div className="input-group" style={{ marginBottom: '24px' }}>
             <span className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
               <MapPin size={16} color="var(--primary)" />
-              Укажите примерное местоположение на карте Алматы
+              {getTranslation('formMapLabel', lang)}
             </span>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-              Кликните по карте в месте, где это произошло. Маркер зафиксирует координаты.
+              {getTranslation('formMapSub', lang)}
             </p>
-            <CatsMap selectMode={true} position={position} setPosition={setPosition} />
+            <CatsMap selectMode={true} position={position} setPosition={setPosition} lang={lang} />
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-              Координаты: {position[0].toFixed(5)}, {position[1].toFixed(5)}
+              {getTranslation('formCoordsLabel', lang)} {position[0].toFixed(5)}, {position[1].toFixed(5)}
             </div>
           </div>
 
@@ -457,10 +486,10 @@ export default function ReportForm({ onSubmit, onCancel }) {
           }}>
             {/* Breed */}
             <div className="input-group">
-              <span className="input-label">Порода</span>
+              <span className="input-label">{getTranslation('formBreedLabel', lang)}</span>
               <input 
                 type="text" 
-                placeholder="Например: Британская (или беспородная)"
+                placeholder={getTranslation('formBreedPlaceholder', lang)}
                 value={breed}
                 onChange={(e) => setBreed(e.target.value)}
                 className="form-input"
@@ -470,7 +499,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
 
             {/* Color */}
             <div className="input-group">
-              <span className="input-label">Основной окрас</span>
+              <span className="input-label">{getTranslation('formColorLabel', lang)}</span>
               <select 
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
@@ -478,7 +507,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 disabled={submitting}
               >
                 {COLORS.map(c => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>{getTranslation(COLOR_KEYS[c], lang)}</option>
                 ))}
               </select>
             </div>
@@ -492,7 +521,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
           }}>
             {/* District */}
             <div className="input-group">
-              <span className="input-label">Район Алматы</span>
+              <span className="input-label">{getTranslation('formDistrictLabel', lang)}</span>
               <select 
                 value={district}
                 onChange={(e) => setDistrict(e.target.value)}
@@ -500,14 +529,16 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 disabled={submitting}
               >
                 {ALMATY_DISTRICTS.map(d => (
-                  <option key={d} value={d}>{d} район</option>
+                  <option key={d} value={d}>{getTranslation(DISTRICT_KEYS[d], lang)} {getTranslation('formDistrictText', lang)}</option>
                 ))}
               </select>
             </div>
 
             {/* Date */}
             <div className="input-group">
-              <span className="input-label">Дата {status === 'lost' ? 'пропажи' : 'нахождения'}</span>
+              <span className="input-label">
+                {getTranslation('formDateLabel', lang)} {status === 'lost' ? getTranslation('formDateLost', lang) : getTranslation('formDateFound', lang)}
+              </span>
               <input 
                 type="date" 
                 value={date}
@@ -520,10 +551,10 @@ export default function ReportForm({ onSubmit, onCancel }) {
 
           {/* Description */}
           <div className="input-group" style={{ marginBottom: '24px' }}>
-            <span className="input-label">Особые приметы / Описание</span>
+            <span className="input-label">{getTranslation('formDescLabel', lang)}</span>
             <textarea 
               rows={4}
-              placeholder="Опишите ошейник, цвет глаз, форму ушей, пугливость или другие приметы, которые помогут людям узнать кошку."
+              placeholder={getTranslation('formDescPlaceholder', lang)}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="form-textarea"
@@ -533,7 +564,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
 
           {/* Contacts Section */}
           <h3 style={{ fontSize: '1.2rem', marginBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
-            Контактная информация
+            {getTranslation('formContactTitle', lang)}
           </h3>
 
           <div style={{
@@ -544,10 +575,10 @@ export default function ReportForm({ onSubmit, onCancel }) {
           }}>
             {/* Name */}
             <div className="input-group">
-              <span className="input-label">Ваше имя</span>
+              <span className="input-label">{getTranslation('formContactNameLabel', lang)}</span>
               <input 
                 type="text" 
-                placeholder="Как к вам обращаться"
+                placeholder={getTranslation('formContactNamePlaceholder', lang)}
                 value={contactName}
                 onChange={(e) => setContactName(e.target.value)}
                 className="form-input"
@@ -558,7 +589,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
 
             {/* Phone */}
             <div className="input-group">
-              <span className="input-label">Номер телефона (для WhatsApp)</span>
+              <span className="input-label">{getTranslation('formContactPhoneLabel', lang)}</span>
               <input 
                 type="text" 
                 placeholder="+7 (7xx) xxx-xx-xx"
@@ -580,7 +611,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
               onClick={onCancel}
               disabled={submitting}
             >
-              Отмена
+              {getTranslation('formCancelBtn', lang)}
             </button>
             <button 
               type="submit" 
@@ -591,12 +622,12 @@ export default function ReportForm({ onSubmit, onCancel }) {
               {submitting ? (
                 <>
                   <Loader size={18} className="animate-spin" style={{ marginRight: '8px' }} />
-                  Загрузка файлов ({photos.length})...
+                  {getTranslation('formSubmitLoading', lang).replace('{count}', photos.length)}
                 </>
               ) : (
                 <>
                   <Sparkles size={18} />
-                  Опубликовать и найти (ИИ)
+                  {getTranslation('formSubmitBtn', lang)}
                 </>
               )}
             </button>

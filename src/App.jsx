@@ -5,6 +5,7 @@ import ReportForm from './components/ReportForm';
 import AIScanner from './components/AIScanner';
 import { supabase } from './supabaseClient';
 import { AlertTriangle } from 'lucide-react';
+import { getTranslation } from './utils/translations';
 
 // Default mock database with realistic Almaty coordinates
 const DEFAULT_CATS = [
@@ -128,6 +129,12 @@ export default function App() {
   const [targetCatForScan, setTargetCatForScan] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dbWarning, setDbWarning] = useState(false);
+  const [lang, setLang] = useState(() => localStorage.getItem('kotopoisk_lang') || 'ru');
+
+  const handleSetLang = (newLang) => {
+    setLang(newLang);
+    localStorage.setItem('kotopoisk_lang', newLang);
+  };
 
   // Fetch cats from Supabase on mount
   useEffect(() => {
@@ -205,9 +212,9 @@ export default function App() {
       setActiveTab('scan');
       
       if (dbWarning) {
-        alert('Объявление добавлено локально в сессию, так как база данных Supabase еще не настроена.');
+        alert(getTranslation('addLocalWarning', lang));
       } else {
-        alert('Ошибка при сохранении в базу данных. Сохранено локально: ' + err.message);
+        alert(getTranslation('addErrorGeneral', lang) + err.message);
       }
     }
   };
@@ -230,7 +237,7 @@ export default function App() {
       }
 
       if (!success) {
-        alert('Неверный код доступа. Удаление отклонено.');
+        alert(getTranslation('deleteErrorInvalid', lang));
         return false;
       }
 
@@ -242,11 +249,11 @@ export default function App() {
         localStorage.setItem('kotopoisk_my_posts', JSON.stringify(myPosts));
       } catch (e) {}
 
-      alert('Объявление успешно удалено.');
+      alert(getTranslation('deleteSuccess', lang));
       return true;
     } catch (err) {
       console.error('Ошибка при удалении:', err);
-      alert('Не удалось удалить объявление: ' + err.message);
+      alert(getTranslation('deleteErrorGeneral', lang) + err.message);
       return false;
     }
   };
@@ -269,9 +276,7 @@ export default function App() {
         }}>
           <AlertTriangle size={18} color="var(--primary)" />
           <span>
-            <strong>Внимание:</strong> База данных Supabase не подключена или таблицы не созданы. 
-            Пожалуйста, запустите SQL-скрипт из файла <code>supabase_setup.sql</code> в SQL Editor вашей панели Supabase. 
-            Сейчас приложение работает во временном демонстрационном режиме.
+            <strong>{getTranslation('appWarningTitle', lang)}</strong> {getTranslation('appWarningText', lang)}
           </span>
         </div>
       )}
@@ -282,6 +287,8 @@ export default function App() {
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
           activeCount={cats.length} 
+          lang={lang}
+          setLang={handleSetLang}
         />
       )}
 
@@ -291,7 +298,7 @@ export default function App() {
           <div style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '300px', color: 'var(--text-secondary)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
               <div style={{ border: '3px solid rgba(255,255,255,0.05)', borderTop: '3px solid var(--primary)', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite' }}></div>
-              <span>Загрузка данных из облака...</span>
+              <span>{getTranslation('appLoading', lang)}</span>
             </div>
             <style>{`
               @keyframes spin {
@@ -308,6 +315,7 @@ export default function App() {
                 onScan={handleStartScan} 
                 onNavigateToReport={() => setActiveTab('report')} 
                 onDelete={handleDeleteCat}
+                lang={lang}
               />
             )}
             
@@ -315,6 +323,7 @@ export default function App() {
               <ReportForm 
                 onSubmit={handleAddCat} 
                 onCancel={() => setActiveTab('dashboard')} 
+                lang={lang}
               />
             )}
             
@@ -326,6 +335,7 @@ export default function App() {
                   setActiveTab('dashboard');
                   setTargetCatForScan(null);
                 }} 
+                lang={lang}
               />
             )}
           </>
@@ -343,7 +353,7 @@ export default function App() {
         textAlign: 'center'
       }}>
         <div className="container">
-          <p>© 2026 КотоПоиск Алматы. Сделано с заботой о питомцах.</p>
+          <p>{getTranslation('footerText', lang)}</p>
         </div>
       </footer>
     </div>

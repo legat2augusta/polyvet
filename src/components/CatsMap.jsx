@@ -1,6 +1,27 @@
 import React from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import { getTranslation } from '../utils/translations';
+
+const COLOR_KEYS = {
+  'Рыжий': 'colorGinger',
+  'Черный': 'colorBlack',
+  'Белый': 'colorWhite',
+  'Серый': 'colorGrey',
+  'Трехцветный': 'colorCalico',
+  'Сиамский': 'colorSiamese'
+};
+
+const DISTRICT_KEYS = {
+  'Бостандыкский': 'districtBostandyk',
+  'Медеуский': 'districtMedeu',
+  'Алмалинский': 'districtAlmaly',
+  'Ауэзовский': 'districtAuezov',
+  'Алатауский': 'districtAlatau',
+  'Жетысуский': 'districtZhetysu',
+  'Турксибский': 'districtTurksib',
+  'Наурызбайский': 'districtNauryzbai'
+};
 
 // Fix custom icon sizing and layout
 const createCustomIcon = (status) => {
@@ -41,7 +62,7 @@ function LocationMarker({ position, setPosition }) {
   );
 }
 
-export default function CatsMap({ cats, selectMode, position, setPosition, onScan }) {
+export default function CatsMap({ cats, selectMode, position, setPosition, onScan, lang }) {
   if (selectMode) {
     return (
       <div style={{ height: '300px', width: '100%', borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)' }}>
@@ -75,17 +96,21 @@ export default function CatsMap({ cats, selectMode, position, setPosition, onSca
                     alt={cat.breed} 
                     style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: '8px', marginBottom: '8px' }}
                   />
-                  <h4 style={{ margin: '0 0 4px', fontSize: '1rem', fontWeight: 'bold' }}>{cat.breed} ({cat.color})</h4>
+                  <h4 style={{ margin: '0 0 4px', fontSize: '1rem', fontWeight: 'bold' }}>
+                    {cat.breed === 'Беспородная' || !cat.breed ? getTranslation('cardBreedDefault', lang) : cat.breed} ({COLOR_KEYS[cat.color] ? getTranslation(COLOR_KEYS[cat.color], lang) : cat.color})
+                  </h4>
                   <span className={`badge ${cat.status === 'lost' ? 'badge-lost' : 'badge-found'}`} style={{ fontSize: '0.65rem', padding: '2px 6px', marginBottom: '8px', display: 'inline-block' }}>
-                    {cat.status === 'lost' ? 'Пропал' : 'Найден'}
+                    {cat.status === 'lost' ? getTranslation('statusLost', lang) : getTranslation('statusFound', lang)}
                   </span>
-                  <p style={{ margin: '0 0 8px', color: '#475569', fontSize: '0.8rem' }}><strong>Район:</strong> {cat.district}</p>
+                  <p style={{ margin: '0 0 8px', color: '#475569', fontSize: '0.8rem' }}>
+                    <strong>{getTranslation('labelDistrict', lang)}</strong> {DISTRICT_KEYS[cat.district] ? getTranslation(DISTRICT_KEYS[cat.district], lang) : cat.district} {getTranslation('cardDistrict', lang)}
+                  </p>
                   <button 
                     className="btn btn-accent" 
                     style={{ padding: '6px 10px', fontSize: '0.75rem', width: '100%', borderRadius: '6px', color: '#fff' }}
                     onClick={() => onScan(cat)}
                   >
-                    Сверить в ИИ
+                    {getTranslation('mapPopupCompare', lang)}
                   </button>
                 </div>
               </Popup>

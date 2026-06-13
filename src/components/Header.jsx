@@ -1,7 +1,8 @@
 import React from 'react';
 import { Search, PlusCircle, Heart, MapPin } from 'lucide-react';
+import { getTranslation } from '../utils/translations';
 
-export default function Header({ activeTab, setActiveTab, activeCount }) {
+export default function Header({ activeTab, setActiveTab, activeCount, lang, setLang }) {
   return (
     <header style={{
       borderBottom: '1px solid var(--card-border)',
@@ -41,7 +42,7 @@ export default function Header({ activeTab, setActiveTab, activeCount }) {
               КотоПоиск
             </h3>
             <span style={{ fontSize: '0.75rem', color: 'var(--primary)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '3px' }}>
-              <MapPin size={10} /> Алматы
+              <MapPin size={10} /> {getTranslation('logoSub', lang)}
             </span>
           </div>
         </div>
@@ -54,7 +55,7 @@ export default function Header({ activeTab, setActiveTab, activeCount }) {
             style={{ padding: '8px 16px', fontSize: '0.9rem' }}
           >
             <Search size={16} />
-            Объявления
+            {getTranslation('navCats', lang)}
           </button>
           
           <button 
@@ -63,12 +64,56 @@ export default function Header({ activeTab, setActiveTab, activeCount }) {
             style={{ padding: '8px 16px', fontSize: '0.9rem' }}
           >
             <PlusCircle size={16} />
-            Подать объявление
+            {getTranslation('navAdd', lang)}
           </button>
         </nav>
 
-        {/* Active Searches Info */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Right Info Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          {/* Language Switcher */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '2px', 
+            background: 'rgba(255,255,255,0.03)', 
+            padding: '3px', 
+            borderRadius: '8px', 
+            border: '1px solid rgba(255,255,255,0.08)' 
+          }}>
+            <button 
+              onClick={() => setLang('ru')}
+              style={{
+                padding: '4px 8px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                background: lang === 'ru' ? 'var(--primary)' : 'transparent',
+                color: lang === 'ru' ? '#fff' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'var(--transition-smooth)'
+              }}
+            >
+              RU
+            </button>
+            <button 
+              onClick={() => setLang('kk')}
+              style={{
+                padding: '4px 8px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                borderRadius: '6px',
+                border: 'none',
+                background: lang === 'kk' ? 'var(--primary)' : 'transparent',
+                color: lang === 'kk' ? '#fff' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'var(--transition-smooth)'
+              }}
+            >
+              ҚАЗ
+            </button>
+          </div>
+
+          {/* Active Searches Info */}
           <div className="glass-card" style={{
             padding: '6px 14px',
             borderRadius: '10px',
@@ -78,10 +123,11 @@ export default function Header({ activeTab, setActiveTab, activeCount }) {
             gap: '8px',
             background: 'rgba(249, 115, 22, 0.05)',
             borderColor: 'rgba(249, 115, 22, 0.2)',
-            boxShadow: 'none'
+            boxShadow: 'none',
+            margin: 0
           }}>
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary)', display: 'inline-block', boxShadow: '0 0 8px var(--primary)' }}></span>
-            <span style={{ color: 'var(--text-secondary)' }}>Активных объявлений:</span>
+            <span style={{ color: 'var(--text-secondary)' }}>{getTranslation('activeSearch', lang)}</span>
             <strong style={{ color: 'var(--primary)' }}>{activeCount}</strong>
           </div>
         </div>
