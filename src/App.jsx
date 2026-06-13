@@ -153,13 +153,9 @@ export default function App() {
           throw error;
         }
 
-        if (data && data.length > 0) {
+        if (data) {
           setCats(data);
           setDbWarning(false);
-        } else {
-          // If connection is successful but table is empty, seed it with mock data 
-          // or just show empty. Let's show mock data if nothing is there.
-          setCats(DEFAULT_CATS);
         }
       } catch (err) {
         console.warn('Supabase fetch error, falling back to local mock data:', err.message);
