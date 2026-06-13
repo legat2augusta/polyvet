@@ -1,4 +1,4 @@
-/* Design System for КотоПоиск Алматы */
+/* Upgraded Design System for КотоПоиск Алматы */
 
 :root {
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -8,8 +8,8 @@
   --bg-main: #060813;
   --bg-gradient: radial-gradient(circle at 50% 0%, #151a30 0%, #060813 100%);
   --card-bg: rgba(17, 24, 39, 0.65);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-hover-border: rgba(249, 115, 22, 0.4);
+  --card-border: rgba(255, 255, 255, 0.07);
+  --card-hover-border: rgba(249, 115, 22, 0.35);
   
   --primary: #f97316; /* Amber/Orange - warm cat theme */
   --primary-hover: #ea580c;
@@ -26,11 +26,11 @@
   --status-lost: #ef4444;
   --status-found: #10b981;
   
-  --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
-  --shadow-glow: 0 0 20px rgba(249, 115, 22, 0.2);
-  --shadow-glow-green: 0 0 20px rgba(16, 185, 129, 0.3);
+  --shadow-lg: 0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 8px 12px -6px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 25px rgba(249, 115, 22, 0.18);
+  --shadow-glow-green: 0 0 25px rgba(16, 185, 129, 0.25);
   
-  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -62,42 +62,47 @@ body {
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 h1 {
   font-size: 3rem;
-  line-height: 1.1;
-  background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+  line-height: 1.15;
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 50%, #94a3b8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 h2 {
-  font-size: 2rem;
+  font-size: 2.1rem;
   color: var(--text-primary);
+  background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 p {
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--text-secondary);
 }
 
 /* Glassmorphism Card styling */
 .glass-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(135deg, rgba(20, 26, 47, 0.7) 0%, rgba(10, 14, 28, 0.5) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--card-border);
-  border-radius: 20px;
-  box-shadow: var(--shadow-lg);
+  border-top: 1px solid rgba(255, 255, 255, 0.12); /* Subtle top highlight for premium feel */
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: var(--transition-smooth);
 }
 
 .glass-card:hover {
   border-color: var(--card-hover-border);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-glow);
+  border-top-color: rgba(249, 115, 22, 0.5);
+  transform: translateY(-6px);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.7), var(--shadow-glow);
 }
 
 /* Container */
@@ -108,7 +113,7 @@ p {
   padding: 0 24px;
 }
 
-/* Buttons */
+/* Buttons with Tactile Feedback */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -118,46 +123,51 @@ p {
   font-weight: 600;
   font-size: 0.95rem;
   padding: 12px 24px;
-  border-radius: 12px;
+  border-radius: 14px;
   border: none;
   cursor: pointer;
   transition: var(--transition-smooth);
   text-decoration: none;
 }
 
+.btn:hover {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
 .btn-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.4);
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.35);
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+  box-shadow: 0 6px 22px rgba(249, 115, 22, 0.55);
   background: linear-gradient(135deg, var(--primary-hover) 0%, #c2410c 100%);
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .btn-accent {
   background: linear-gradient(135deg, var(--scan-accent) 0%, #059669 100%);
   color: #fff;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
 }
 
 .btn-accent:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.55);
 }
 
 /* Inputs & Form Elements */
@@ -171,28 +181,29 @@ p {
 
 .input-label {
   font-family: var(--font-heading);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.9rem;
   color: var(--text-secondary);
+  letter-spacing: -0.01em;
 }
 
 .form-input, .form-select, .form-textarea {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 13px 18px;
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 1rem;
+  font-size: 0.95rem;
   transition: var(--transition-smooth);
   width: 100%;
 }
 
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   outline: none;
-  border-color: var(--primary);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+  border-color: rgba(249, 115, 22, 0.7);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15), inset 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .form-select option {
@@ -204,24 +215,24 @@ p {
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 4px 12px;
   border-radius: 9999px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .badge-lost {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.12);
   color: #fca5a5;
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 .badge-found {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16, 185, 129, 0.12);
   color: #86efac;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.25);
 }
 
 /* Animations */
@@ -239,17 +250,19 @@ p {
 
 @keyframes pulse-glow {
   0%, 100% {
-    opacity: 0.4;
+    opacity: 0.35;
+    transform: scale(1);
   }
   50% {
-    opacity: 0.8;
+    opacity: 0.65;
+    transform: scale(1.02);
   }
 }
 
 .scanner-container {
   position: relative;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 20px;
   border: 2px solid var(--scan-accent);
   box-shadow: var(--shadow-glow-green);
 }
@@ -262,21 +275,22 @@ p {
   background: linear-gradient(90deg, transparent, var(--scan-accent), transparent);
   box-shadow: 0 0 15px 4px var(--scan-accent);
   z-index: 10;
-  animation: laser-scan 4s linear infinite;
+  animation: laser-scan 3.5s linear infinite;
   pointer-events: none;
 }
 
 .scan-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.15) 100%);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.03) 0%, rgba(16, 185, 129, 0.12) 100%);
   z-index: 5;
   pointer-events: none;
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -284,8 +298,9 @@ p {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  border: 1px solid #060813;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -296,7 +311,7 @@ p {
 .cats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  gap: 28px;
   margin-top: 32px;
 }
 
