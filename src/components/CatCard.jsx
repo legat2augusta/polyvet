@@ -40,7 +40,7 @@ const TAG_KEYS = {
   shorthair: 'tagShortHair'
 };
 
-export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare, onFetchPhone, lang }) {
+export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare, onFetchPhone, lang, viewMode = 'grid' }) {
   const isLost = cat.status === 'lost';
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -286,22 +286,22 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
     setCurrentPhotoIndex(index);
   };
 
+  const isListView = viewMode === 'list';
+
   return (
     <div 
-      className={`glass-card ${cat.status === 'reunited' ? 'reunited-card' : ''}`} 
+      className={`glass-card cat-card ${isListView ? 'cat-card-list' : 'cat-card-grid'} ${cat.status === 'reunited' ? 'reunited-card' : ''}`} 
       onMouseMove={handleMouseMove}
       style={{
         display: 'flex',
-        flexDirection: 'column',
         overflow: 'hidden',
-        height: '100%',
         position: 'relative',
         border: cat.status === 'reunited' ? '2px solid rgba(249, 115, 22, 0.4)' : '1px solid var(--card-border)',
         boxShadow: cat.status === 'reunited' ? '0 8px 32px rgba(249, 115, 22, 0.15)' : 'none',
         transition: 'all 0.3s ease'
       }}
     >
-      <div className="glass-card-content">
+      <div className="glass-card-content" style={{ display: 'flex', flexDirection: 'inherit', width: '100%', height: '100%' }}>
         {/* Status Badge */}
         <div style={{
           position: 'absolute',
@@ -415,13 +415,14 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
         )}
 
       {/* Cat Photo / Carousel */}
-      <div style={{
-        width: '100%',
-        height: '220px',
-        overflow: 'hidden',
-        position: 'relative',
-        background: '#0c0f1d'
-      }}>
+      <div 
+        className="cat-card-photo-wrapper"
+        style={{
+          overflow: 'hidden',
+          position: 'relative',
+          background: '#0c0f1d'
+        }}
+      >
         <img 
           key={currentPhotoIndex}
           src={cardPhotos[currentPhotoIndex]} 
@@ -525,13 +526,15 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
       </div>
 
       {/* Content */}
-      <div style={{
-        padding: '20px',
-        display: 'flex',
-        flexDirection: 'column',
-        flexGrow: 1,
-        textAlign: 'left'
-      }}>
+      <div 
+        className="cat-card-details-wrapper"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flexGrow: 1,
+          textAlign: 'left'
+        }}
+      >
         {/* Breed & Primary color */}
         <h4 style={{
           fontSize: '1.2rem',

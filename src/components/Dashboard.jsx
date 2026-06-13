@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import CatCard from './CatCard';
 import CatsMap from './CatsMap';
-import { Search, Filter, AlertCircle, PlusCircle, Heart } from 'lucide-react';
+import { Search, Filter, AlertCircle, PlusCircle, Heart, LayoutGrid, List } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
 
 const ALMATY_DISTRICTS = [
@@ -58,6 +58,15 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, 
   const [selectedCollar, setSelectedCollar] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showOnlyMyPosts, setShowOnlyMyPosts] = useState(false);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem('kotopoisk_view_mode') || 'grid');
+  const [visibleCount, setVisibleCount] = useState(6);
+  const sentinelRef = useRef(null);
+
+  // Persist viewMode
+  const handleToggleViewMode = (mode) => {
+    setViewMode(mode);
+    localStorage.setItem('kotopoisk_view_mode', mode);
+  };
 
   // Filter cats based on selections
   const filteredCats = cats.filter(cat => {
@@ -84,6 +93,33 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, 
     
     return matchesSearch && matchesDistrict && matchesStatus && matchesColor && matchesAge && matchesHair && matchesCollar;
   });
+
+  // Reset visible count when filters change
+  useEffect(() => {
+    setVisibleCount(6);
+  }, [searchTerm, selectedDistrict, selectedStatus, selectedColor, selectedAge, selectedHair, selectedCollar, showOnlyMyPosts]);
+
+  // Intersection Observer for Infinite Scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setVisibleCount((prev) => Math.min(prev + 6, filteredCats.length));
+      }
+    }, {
+      rootMargin: '150px'
+    });
+
+    const currentSentinel = sentinelRef.current;
+    if (currentSentinel) {
+      observer.observe(currentSentinel);
+    }
+
+    return () => {
+      if (currentSentinel) {
+        observer.unobserve(currentSentinel);
+      }
+    };
+  }, [filteredCats.length]);
 
   return (
     <div className="container" style={{ padding: '40px 24px' }}>
@@ -281,22 +317,143 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, 
       </div>
 
       {/* Grid Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-        <h3 style={{ fontSize: '1.5rem', color: 'var(--text-primary)' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '24px',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
+        <h3 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', margin: 0 }}>
           {searchTerm || selectedDistrict || selectedStatus || selectedColor ? getTranslation('resultsTitle', lang) : getTranslation('allAdsTitle', lang)}
         </h3>
-        <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          {getTranslation('foundCount', lang)} {filteredCats.length}
-        </span>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            {getTranslation('foundCount', lang)} {filteredCats.length}
+          </span>
+          
+          {/* View Mode Toggle Buttons */}
+          <div style={{ 
+            display: 'flex', 
+            background: 'rgba(255, 255, 255, 0.03)', 
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '3px',
+            borderRadius: '12px'
+          }}>
+            <button
+              type="button"
+              onClick={() => handleToggleViewMode('grid')}
+              title={getTranslation('viewGrid', lang)}
+              style={{
+                border: 'none',
+                background: viewMode === 'grid' ? 'var(--primary-light)' : 'transparent',
+                color: viewMode === 'grid' ? '#fff' : 'var(--text-secondary)',
+                padding: '6px 12px',
+                borderRadius: '9px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.8rem',
+                fontWeight: viewMode === 'grid' ? '600' : 'normal',
+                transition: 'var(--transition-smooth)'
+              }}
+            >
+              <LayoutGrid size={14} color={viewMode === 'grid' ? 'var(--primary)' : 'var(--text-secondary)'} />
+              <span className="hide-on-mobile">{getTranslation('viewGrid', lang)}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleViewMode('list')}
+              title={getTranslation('viewList', lang)}
+              style={{
+                border: 'none',
+                background: viewMode === 'list' ? 'var(--primary-light)' : 'transparent',
+                color: viewMode === 'list' ? '#fff' : 'var(--text-secondary)',
+                padding: '6px 12px',
+                borderRadius: '9px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.8rem',
+                fontWeight: viewMode === 'list' ? '600' : 'normal',
+                transition: 'var(--transition-smooth)'
+              }}
+            >
+              <List size={14} color={viewMode === 'list' ? 'var(--primary)' : 'var(--text-secondary)'} />
+              <span className="hide-on-mobile">{getTranslation('viewList', lang)}</span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Grid Content */}
+      {/* Grid/List Content */}
       {filteredCats.length > 0 ? (
-        <div className="cats-grid">
-          {filteredCats.map(cat => (
-            <CatCard key={cat.id} cat={cat} onScan={onScan} onDelete={onDelete} onMarkReunited={onMarkReunited} onShare={onShare} onFetchPhone={onFetchPhone} lang={lang} />
-          ))}
-        </div>
+        <>
+          {viewMode === 'grid' ? (
+            <div className="cats-grid">
+              {filteredCats.slice(0, visibleCount).map(cat => (
+                <CatCard 
+                  key={cat.id} 
+                  cat={cat} 
+                  viewMode={viewMode}
+                  onScan={onScan} 
+                  onDelete={onDelete} 
+                  onMarkReunited={onMarkReunited} 
+                  onShare={onShare} 
+                  onFetchPhone={onFetchPhone} 
+                  lang={lang} 
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="cats-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+              {filteredCats.slice(0, visibleCount).map(cat => (
+                <CatCard 
+                  key={cat.id} 
+                  cat={cat} 
+                  viewMode={viewMode}
+                  onScan={onScan} 
+                  onDelete={onDelete} 
+                  onMarkReunited={onMarkReunited} 
+                  onShare={onShare} 
+                  onFetchPhone={onFetchPhone} 
+                  lang={lang} 
+                />
+              ))}
+            </div>
+          )}
+          
+          {/* Sentinel for Infinite Scroll */}
+          <div 
+            ref={sentinelRef} 
+            style={{ 
+              height: '40px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              marginTop: '32px',
+              color: 'var(--text-muted)',
+              fontSize: '0.85rem'
+            }}
+          >
+            {visibleCount < filteredCats.length && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="animate-spin" style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid rgba(255,255,255,0.1)',
+                  borderTop: '2px solid var(--primary)',
+                  borderRadius: '50%'
+                }} />
+                <span>{lang === 'kk' ? 'Жүктелуде...' : 'Загрузка новых объявлений...'}</span>
+              </div>
+            )}
+          </div>
+        </>
       ) : (
         <div className="glass-card" style={{
           padding: '60px 40px',
