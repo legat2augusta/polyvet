@@ -52,6 +52,52 @@ export default function ReportForm({ onSubmit, onCancel }) {
   
   const fileInputRef = useRef(null);
 
+  const handlePhoneChange = (e) => {
+    const value = e.target.value;
+    const isDeleting = value.length < contactPhone.length;
+    
+    if (value === '') {
+      setContactPhone('');
+      return;
+    }
+    
+    // Extract only digits
+    let digits = value.replace(/\D/g, '');
+    
+    // If deleting and we only have the country code left, let the user clear it
+    if (isDeleting && digits === '7') {
+      setContactPhone('');
+      return;
+    }
+    
+    // If they typed or pasted a 10-digit number starting with 7
+    if (digits.length === 10 && (digits.startsWith('7') || digits.startsWith('70') || digits.startsWith('74') || digits.startsWith('77') || digits.startsWith('708') || digits.startsWith('707') || digits.startsWith('705') || digits.startsWith('701') || digits.startsWith('702') || digits.startsWith('777') || digits.startsWith('775') || digits.startsWith('778') || digits.startsWith('776') || digits.startsWith('747'))) {
+      digits = '7' + digits;
+    } else if (digits.startsWith('8') && digits.length === 11) {
+      digits = '7' + digits.substring(1);
+    } else if (digits.length > 0 && !digits.startsWith('7')) {
+      digits = '7' + digits;
+    }
+    
+    digits = digits.substring(0, 11);
+    
+    let formatted = '+7';
+    if (digits.length > 1) {
+      formatted += ' (' + digits.substring(1, 4);
+    }
+    if (digits.length > 4) {
+      formatted += ') ' + digits.substring(4, 7);
+    }
+    if (digits.length > 7) {
+      formatted += '-' + digits.substring(7, 9);
+    }
+    if (digits.length > 9) {
+      formatted += '-' + digits.substring(9, 11);
+    }
+    
+    setContactPhone(formatted);
+  };
+
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     const availableSlots = 3 - photos.length;
@@ -517,7 +563,8 @@ export default function ReportForm({ onSubmit, onCancel }) {
                 type="text" 
                 placeholder="+7 (7xx) xxx-xx-xx"
                 value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
+                onChange={handlePhoneChange}
+                maxLength={18}
                 className="form-input"
                 required
                 disabled={submitting}
