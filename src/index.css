@@ -514,7 +514,15 @@ p {
   border-radius: inherit;
   border: 2px solid var(--primary);
   opacity: 0;
+}
+
+.glass-card:hover .btn-pulse::after,
+.btn-pulse:hover::after {
   animation: btn-ripple 2.2s cubic-bezier(0.25, 0, 0, 1) infinite;
+}
+
+.btn-pulse-green {
+  position: relative;
 }
 
 .btn-pulse-green::after {
@@ -524,6 +532,10 @@ p {
   border-radius: inherit;
   border: 2px solid var(--scan-accent);
   opacity: 0;
+}
+
+.glass-card:hover .btn-pulse-green::after,
+.btn-pulse-green:hover::after {
   animation: btn-ripple 2.2s cubic-bezier(0.25, 0, 0, 1) infinite;
 }
 
