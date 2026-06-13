@@ -177,6 +177,37 @@ export const translations = {
     filterCollarLabel: "Ошейник",
     filterCollarAny: "Неважно",
     filterCollarYes: "В ошейнике",
+    
+    // Feedback Form (RU)
+    feedbackBtn: "Обратная связь",
+    feedbackTitle: "Обратная связь и предложения",
+    feedbackTypeLabel: "Тип обращения",
+    feedbackTypeSuggestion: "Предложение по улучшению",
+    feedbackTypeBug: "Сообщить об ошибке",
+    feedbackTypeContact: "Связь с автором",
+    feedbackNameLabel: "Ваше имя (необязательно)",
+    feedbackContactLabel: "Ваш контакт для связи (необязательно)",
+    feedbackContactPlaceholder: "Email или телефон",
+    feedbackMessageLabel: "Ваше сообщение",
+    feedbackMessagePlaceholder: "Опишите ваше предложение или проблему подробно...",
+    feedbackSubmitBtn: "Отправить отзыв",
+    feedbackSuccess: "Спасибо! Ваш отзыв успешно отправлен.",
+    feedbackError: "Произошла ошибка при отправке. Пожалуйста, попробуйте еще раз.",
+    
+    // Admin Dashboard (RU)
+    adminTitle: "Панель управления обратной связью",
+    adminPasscodePlaceholder: "Введите пароль администратора...",
+    adminUnlockBtn: "Войти",
+    adminIncorrectPasscode: "Неверный пароль!",
+    adminNoFeedback: "Сообщений обратной связи пока нет.",
+    adminArchiveBtn: "В архив",
+    adminStatusNew: "Новое",
+    adminStatusArchived: "В архиве",
+    adminTotalSubmissions: "Всего отзывов",
+    adminPendingSubmissions: "Новых отзывов",
+    adminFilterAll: "Все",
+    adminFilterNew: "Новые",
+    adminFilterArchived: "Архив",
   },
   kk: {
     // Header & Footer
@@ -356,6 +387,37 @@ export const translations = {
     filterCollarLabel: "Қарғыбау",
     filterCollarAny: "Маңызды емес",
     filterCollarYes: "Қарғыбауы бар",
+    
+    // Feedback Form (KK)
+    feedbackBtn: "Кері байланыс",
+    feedbackTitle: "Кері байланыс және ұсыныстар",
+    feedbackTypeLabel: "Өтініш түрі",
+    feedbackTypeSuggestion: "Жақсарту бойынша ұсыныс",
+    feedbackTypeBug: "Қате туралы хабарлау",
+    feedbackTypeContact: "Автормен байланыс",
+    feedbackNameLabel: "Сіздің есіміңіз (міндетті емес)",
+    feedbackContactLabel: "Байланыс деректеріңіз (міндетті емес)",
+    feedbackContactPlaceholder: "Email немесе телефон",
+    feedbackMessageLabel: "Сіздің хабарламаңыз",
+    feedbackMessagePlaceholder: "Ұсынысыңызды немесе туындаған мәселені егжей-тегжейлі сипаттаңыз...",
+    feedbackSubmitBtn: "Пікірді жіберу",
+    feedbackSuccess: "Рақмет! Сіздің пікіріңіз сәтті жіберілді.",
+    feedbackError: "Жіберу кезінде қате орын алды. Қайталап көріңіз.",
+    
+    // Admin Dashboard (KK)
+    adminTitle: "Кері байланысты басқару панелі",
+    adminPasscodePlaceholder: "Әкімші құпия сөзін енгізіңіз...",
+    adminUnlockBtn: "Кіру",
+    adminIncorrectPasscode: "Құпия сөз қате!",
+    adminNoFeedback: "Кері байланыс хабарламалары әлі жоқ.",
+    adminArchiveBtn: "Мұрағаттау",
+    adminStatusNew: "Жаңа",
+    adminStatusArchived: "Мұрағатталған",
+    adminTotalSubmissions: "Барлық пікірлер",
+    adminPendingSubmissions: "Жаңа пікірлер",
+    adminFilterAll: "Барлығы",
+    adminFilterNew: "Жаңалары",
+    adminFilterArchived: "Мұрағат",
   }
 };
 

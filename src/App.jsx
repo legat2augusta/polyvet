@@ -3,6 +3,8 @@ import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import ReportForm from './components/ReportForm';
 import AIScanner from './components/AIScanner';
+import FeedbackModal from './components/FeedbackModal';
+import AdminDashboard from './components/AdminDashboard';
 import { supabase } from './supabaseClient';
 import { AlertTriangle } from 'lucide-react';
 import { getTranslation } from './utils/translations';
@@ -301,7 +303,7 @@ export default function App() {
       )}
 
       {/* Header Navigation */}
-      {activeTab !== 'scan' && (
+      {activeTab !== 'scan' && activeTab !== 'admin' && (
         <Header 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
@@ -357,24 +359,52 @@ export default function App() {
                 lang={lang}
               />
             )}
+
+            {activeTab === 'admin' && (
+              <AdminDashboard 
+                onBack={() => setActiveTab('dashboard')} 
+                lang={lang}
+              />
+            )}
           </>
         )}
       </main>
 
       {/* Footer */}
-      <footer style={{
-        borderTop: '1px solid var(--card-border)',
-        padding: '24px 0',
-        marginTop: 'auto',
-        fontSize: '0.85rem',
-        color: 'var(--text-muted)',
-        background: 'rgba(10, 15, 30, 0.3)',
-        textAlign: 'center'
-      }}>
-        <div className="container">
-          <p>{getTranslation('footerText', lang)}</p>
-        </div>
-      </footer>
+      {activeTab !== 'admin' && (
+        <footer style={{
+          borderTop: '1px solid var(--card-border)',
+          padding: '24px 0',
+          marginTop: 'auto',
+          fontSize: '0.85rem',
+          color: 'var(--text-muted)',
+          background: 'rgba(10, 15, 30, 0.3)',
+          textAlign: 'center'
+        }}>
+          <div className="container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <p>{getTranslation('footerText', lang)}</p>
+            <button
+              onClick={() => setActiveTab('admin')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'rgba(255, 255, 255, 0.2)',
+                fontSize: '11px',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.4)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.2)'}
+            >
+              Панель управления
+            </button>
+          </div>
+        </footer>
+      )}
+
+      {/* Floating Feedback Button Modal */}
+      {activeTab !== 'admin' && <FeedbackModal lang={lang} />}
     </div>
   );
 }
