@@ -5,6 +5,7 @@ import ReportForm from './components/ReportForm';
 import AIScanner from './components/AIScanner';
 import FeedbackModal from './components/FeedbackModal';
 import AdminDashboard from './components/AdminDashboard';
+import ReunionsPage from './components/ReunionsPage';
 import { supabase } from './supabaseClient';
 import { AlertTriangle } from 'lucide-react';
 import { getTranslation } from './utils/translations';
@@ -279,6 +280,64 @@ export default function App() {
     }
   };
 
+  const handleMarkReunited = async (id, passcode, storyText) => {
+    try {
+      const { data: success, error: rpcErr } = await supabase.rpc('mark_cat_reunited_with_passcode', {
+        cat_id: id,
+        input_passcode: passcode,
+        optional_story: storyText
+      });
+
+      if (rpcErr) {
+        throw rpcErr;
+      }
+
+      if (!success) {
+        return false;
+      }
+
+      setCats(prevCats => prevCats.map(cat => {
+        if (cat.id === id) {
+          return {
+            ...cat,
+            status: 'reunited',
+            contact_name: 'Аноним',
+            contact_phone: '',
+            description: storyText.trim() ? storyText.trim() : cat.description
+          };
+        }
+        return cat;
+      }));
+
+      try {
+        const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+        delete myPosts[id];
+        localStorage.setItem('kotopoisk_my_posts', JSON.stringify(myPosts));
+      } catch (e) {}
+
+      return true;
+    } catch (err) {
+      console.error('Ошибка при отметке reunited:', err);
+      if (dbWarning) {
+        setCats(prevCats => prevCats.map(cat => {
+          if (cat.id === id) {
+            return {
+              ...cat,
+              status: 'reunited',
+              contact_name: 'Аноним',
+              contact_phone: '',
+              description: storyText.trim() ? storyText.trim() : cat.description
+            };
+          }
+          return cat;
+        }));
+        return true;
+      }
+      alert(getTranslation('deleteErrorGeneral', lang) + err.message);
+      return false;
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       {/* DB Warning Banner */}
@@ -307,7 +366,7 @@ export default function App() {
         <Header 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
-          activeCount={cats.length} 
+          activeCount={cats.filter(c => c.status !== 'reunited').length} 
           lang={lang}
           setLang={handleSetLang}
         />
@@ -332,10 +391,20 @@ export default function App() {
           <>
             {activeTab === 'dashboard' && (
               <Dashboard 
-                cats={cats} 
+                cats={cats.filter(c => c.status !== 'reunited')} 
                 onScan={handleStartScan} 
                 onNavigateToReport={() => setActiveTab('report')} 
                 onDelete={handleDeleteCat}
+                onMarkReunited={handleMarkReunited}
+                lang={lang}
+              />
+            )}
+
+            {activeTab === 'reunions' && (
+              <ReunionsPage 
+                cats={cats} 
+                onDelete={handleDeleteCat} 
+                onMarkReunited={handleMarkReunited}
                 lang={lang}
               />
             )}
@@ -351,7 +420,7 @@ export default function App() {
             {activeTab === 'scan' && targetCatForScan && (
               <AIScanner 
                 targetCat={targetCatForScan} 
-                cats={cats} 
+                cats={cats.filter(c => c.status !== 'reunited')} 
                 onClose={() => {
                   setActiveTab('dashboard');
                   setTargetCatForScan(null);

@@ -48,7 +48,7 @@ const COLOR_KEYS = {
   'Двухцветный': 'colorBicolor'
 };
 
-export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, lang }) {
+export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, onMarkReunited, lang }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -294,7 +294,7 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, 
       {filteredCats.length > 0 ? (
         <div className="cats-grid">
           {filteredCats.map(cat => (
-            <CatCard key={cat.id} cat={cat} onScan={onScan} onDelete={onDelete} lang={lang} />
+            <CatCard key={cat.id} cat={cat} onScan={onScan} onDelete={onDelete} onMarkReunited={onMarkReunited} lang={lang} />
           ))}
         </div>
       ) : (

@@ -57,6 +57,15 @@ export default function Header({ activeTab, setActiveTab, activeCount, lang, set
             <Search size={16} />
             {getTranslation('navCats', lang)}
           </button>
+
+          <button 
+            className={`btn ${activeTab === 'reunions' ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setActiveTab('reunions')}
+            style={{ padding: '8px 16px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Heart size={16} fill={activeTab === 'reunions' ? '#fff' : 'none'} />
+            {getTranslation('tabReunions', lang)}
+          </button>
           
           <button 
             className={`btn ${activeTab === 'report' ? 'btn-primary' : 'btn-secondary'}`}

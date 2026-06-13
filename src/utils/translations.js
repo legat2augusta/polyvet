@@ -208,6 +208,21 @@ export const translations = {
     adminFilterAll: "Все",
     adminFilterNew: "Новые",
     adminFilterArchived: "Архив",
+    
+    // Happy Reunions (RU)
+    tabReunions: "Счастливые истории",
+    statusReunited: "Вернулся домой! 🧡",
+    reunitedTitle: "Они вернулись домой! 🧡",
+    reunitedSubtitle: "Счастливые истории котиков, которые воссоединились со своими хозяевами",
+    reunitedDate: "Воссоединились",
+    confirmReunitedQuestion: "Поздравляем! Ваш котик нашелся?",
+    confirmReunitedYes: "Да, котик нашелся! 🎉",
+    confirmReunitedNo: "Нет, просто удалить объявление",
+    storyTitle: "Расскажите вашу счастливую историю!",
+    storyPlaceholder: "Например: Благодаря КотоПоиску наш Симба вернулся домой! Его увидели во дворе соседнего дома. Спасибо всем неравнодушным!",
+    storySaveBtn: "Опубликовать счастливую историю",
+    storySkipBtn: "Пропустить и просто перенести в счастливые истории",
+    storySuccess: "Поздравляем! Котик перенесен в счастливые истории.",
   },
   kk: {
     // Header & Footer
@@ -418,6 +433,21 @@ export const translations = {
     adminFilterAll: "Барлығы",
     adminFilterNew: "Жаңалары",
     adminFilterArchived: "Мұрағат",
+    
+    // Happy Reunions (KK)
+    tabReunions: "Сәтті оқиғалар",
+    statusReunited: "Үйіне оралды! 🧡",
+    reunitedTitle: "Олар үйіне оралды! 🧡",
+    reunitedSubtitle: "Иелерімен қайта қауышқан мысықтардың сәтті оқиғалары",
+    reunitedDate: "Қауышты",
+    confirmReunitedQuestion: "Құттықтаймыз! Мысығыңыз табылды ма?",
+    confirmReunitedYes: "Иә, мысық табылды! 🎉",
+    confirmReunitedNo: "Жоқ, хабарландыруды жай ғана өшіру",
+    storyTitle: "Бақытты оқиғаңызды бөлісіңіз!",
+    storyPlaceholder: "Мысалы: КотоПоиск арқасында біздің Симба үйге оралды! Оны көрші үйдің ауласынан көрді. Барлық қамқор жандарға рақмет!",
+    storySaveBtn: "Сәтті оқиғаларға жариялау",
+    storySkipBtn: "Мұрағатқа жай ғана ауыстыру",
+    storySuccess: "Құттықтаймыз! Мысық сәтті оқиғаларға көшірілді.",
   }
 };
 

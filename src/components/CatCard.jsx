@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2, Heart, X } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
 
 const COLOR_KEYS = {
@@ -39,9 +39,52 @@ const TAG_KEYS = {
   shorthair: 'tagShortHair'
 };
 
-export default function CatCard({ cat, onScan, onDelete, lang }) {
+export default function CatCard({ cat, onScan, onDelete, onMarkReunited, lang }) {
   const isLost = cat.status === 'lost';
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteStep, setDeleteStep] = useState('passcode');
+  const [passcode, setPasscode] = useState('');
+  const [story, setStory] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+
+  const playFanfare = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      const ctx = new AudioContext();
+      
+      const notes = [
+        { f: 261.63, t: 0.1 },  // C4
+        { f: 329.63, t: 0.1 },  // E4
+        { f: 392.00, t: 0.1 },  // G4
+        { f: 523.25, t: 0.4 }   // C5
+      ];
+      
+      let now = ctx.currentTime;
+      notes.forEach((note) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(note.f, now);
+        
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + note.t);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(now);
+        osc.stop(now + note.t);
+        
+        now += note.t + 0.05;
+      });
+    } catch (err) {
+      console.warn('Failed to play audio:', err);
+    }
+  };
   const [translatedDescription, setTranslatedDescription] = useState(null);
   const [showTranslation, setShowTranslation] = useState(false);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -94,12 +137,15 @@ export default function CatCard({ cat, onScan, onDelete, lang }) {
   };
 
   return (
-    <div className="glass-card" style={{
+    <div className={`glass-card ${cat.status === 'reunited' ? 'reunited-card' : ''}`} style={{
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
       height: '100%',
-      position: 'relative'
+      position: 'relative',
+      border: cat.status === 'reunited' ? '2px solid rgba(249, 115, 22, 0.4)' : '1px solid var(--card-border)',
+      boxShadow: cat.status === 'reunited' ? '0 8px 32px rgba(249, 115, 22, 0.15)' : 'none',
+      transition: 'all 0.3s ease'
     }}>
       {/* Status Badge */}
       <div style={{
@@ -108,9 +154,19 @@ export default function CatCard({ cat, onScan, onDelete, lang }) {
         left: '12px',
         zIndex: 10
       }}>
-        <span className={`badge ${isLost ? 'badge-lost' : 'badge-found'}`}>
-          {isLost ? getTranslation('statusLost', lang) : getTranslation('statusFound', lang)}
-        </span>
+        {cat.status === 'reunited' ? (
+          <span className="badge" style={{
+            background: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)',
+            color: '#ffffff',
+            boxShadow: '0 2px 10px rgba(249, 115, 22, 0.4)'
+          }}>
+            {getTranslation('statusReunited', lang)}
+          </span>
+        ) : (
+          <span className={`badge ${isLost ? 'badge-lost' : 'badge-found'}`}>
+            {isLost ? getTranslation('statusLost', lang) : getTranslation('statusFound', lang)}
+          </span>
+        )}
       </div>
 
       {/* Delete Button */}
@@ -118,25 +174,19 @@ export default function CatCard({ cat, onScan, onDelete, lang }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            const localPasscode = (() => {
-              try {
-                const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
-                return myPosts[cat.id] || null;
-              } catch (err) {
-                return null;
-              }
-            })();
-
-            if (localPasscode) {
-              if (window.confirm(getTranslation('cardDeleteConfirm', lang))) {
-                onDelete(cat.id, localPasscode);
-              }
-            } else {
-              const enteredCode = window.prompt(getTranslation('cardDeletePrompt', lang));
-              if (enteredCode !== null) {
-                onDelete(cat.id, enteredCode.trim());
-              }
+            let localPasscode = '';
+            try {
+              const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+              localPasscode = myPosts[cat.id] || '';
+            } catch (err) {
+              console.warn('Failed to parse my posts:', err);
             }
+            
+            setPasscode(localPasscode);
+            setDeleteStep(localPasscode ? 'reunited_question' : 'passcode');
+            setDeleteError(null);
+            setStory('');
+            setIsDeleteModalOpen(true);
           }}
           style={{
             position: 'absolute',
@@ -391,45 +441,447 @@ export default function CatCard({ cat, onScan, onDelete, lang }) {
 
           {/* Display passcode if we own this cat */}
           {(() => {
+            let localPasscode = null;
             try {
               const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
-              const localPasscode = myPosts[cat.id];
-              if (localPasscode) {
-                return (
-                  <div style={{ 
-                    marginTop: '8px', 
-                    padding: '6px 10px', 
-                    background: 'rgba(249, 115, 22, 0.08)', 
-                    border: '1px dashed rgba(249, 115, 22, 0.3)', 
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
-                    color: 'var(--primary)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <span>{getTranslation('cardPasscodeBadge', lang)} <strong style={{ letterSpacing: '0.05em' }}>{localPasscode}</strong></span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{getTranslation('cardPasscodeOnlyYou', lang)}</span>
-                  </div>
-                );
-              }
-            } catch (err) {}
-            return null;
+              localPasscode = myPosts[cat.id];
+            } catch (err) {
+              console.warn('Failed to parse my posts:', err);
+            }
+            if (!localPasscode) return null;
+            return (
+              <div style={{ 
+                marginTop: '8px', 
+                padding: '6px 10px', 
+                background: 'rgba(249, 115, 22, 0.08)', 
+                border: '1px dashed rgba(249, 115, 22, 0.3)', 
+                borderRadius: '6px',
+                fontSize: '0.8rem',
+                color: 'var(--primary)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <span>{getTranslation('cardPasscodeBadge', lang)} <strong style={{ letterSpacing: '0.05em' }}>{localPasscode}</strong></span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{getTranslation('cardPasscodeOnlyYou', lang)}</span>
+              </div>
+            );
           })()}
         </div>
 
         {/* Action Button */}
-        <div style={{ marginTop: 'auto' }}>
-          <button 
-            className="btn btn-accent" 
-            style={{ width: '100%', padding: '10px', fontSize: '0.85rem' }}
-            onClick={() => onScan(cat)}
-          >
-            <Cpu size={16} />
-            {getTranslation('cardScanBtn', lang)}
-          </button>
-        </div>
+        {cat.status === 'reunited' ? (
+          <div style={{ 
+            marginTop: 'auto', 
+            padding: '10px', 
+            borderRadius: '12px', 
+            background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.1) 0%, rgba(249, 115, 22, 0.1) 100%)',
+            border: '1px solid rgba(249, 115, 22, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            color: '#fdba74',
+            fontSize: '0.85rem',
+            fontWeight: '600'
+          }}>
+            <Heart size={16} fill="var(--primary)" color="var(--primary)" />
+            <span>{getTranslation('statusReunited', lang)}</span>
+          </div>
+        ) : (
+          <div style={{ marginTop: 'auto' }}>
+            <button 
+              className="btn btn-accent" 
+              style={{ width: '100%', padding: '10px', fontSize: '0.85rem' }}
+              onClick={() => onScan(cat)}
+            >
+              <Cpu size={16} />
+              {getTranslation('cardScanBtn', lang)}
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Delete/Reunion Modal */}
+      {isDeleteModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(5, 8, 16, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px',
+        }} onClick={(e) => e.stopPropagation()}>
+          
+          <div style={{
+            background: 'linear-gradient(135deg, #131a35 0%, #0b0f19 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(249, 115, 22, 0.05)',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '450px',
+            padding: '30px',
+            position: 'relative',
+            color: '#fff',
+            overflow: 'hidden'
+          }} className="delete-modal-content">
+            
+            {/* Confetti canvas on success step */}
+            {deleteStep === 'success' && <ConfettiCanvas />}
+
+            {/* Close button - hidden in success step */}
+            {deleteStep !== 'success' && (
+              <button 
+                onClick={() => setIsDeleteModalOpen(false)}
+                style={{
+                  position: 'absolute',
+                  top: '20px',
+                  right: '20px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'var(--transition-smooth)'
+                }}
+              >
+                <X size={16} />
+              </button>
+            )}
+
+            {/* Step 1: Passcode Verification */}
+            {deleteStep === 'passcode' && (
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px', color: '#fff' }}>
+                  {getTranslation('cardDeleteBtn', lang)}
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+                  {getTranslation('cardDeletePrompt', lang)}
+                </p>
+                <input 
+                  type="text"
+                  placeholder="PIN"
+                  value={passcode}
+                  onChange={(e) => setPasscode(e.target.value.trim())}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    fontSize: '1.1rem',
+                    textAlign: 'center',
+                    letterSpacing: '0.1em',
+                    marginBottom: '20px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && passcode) {
+                      setDeleteStep('reunited_question');
+                    }
+                  }}
+                  autoFocus
+                />
+                {deleteError && (
+                  <p style={{ color: '#f87171', fontSize: '0.85rem', marginBottom: '16px' }}>{deleteError}</p>
+                )}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    style={{ flex: 1, padding: '12px' }}
+                  >
+                    Отмена
+                  </button>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => {
+                      if (!passcode) {
+                        setDeleteError('Пожалуйста, введите код доступа.');
+                        return;
+                      }
+                      setDeleteStep('reunited_question');
+                    }}
+                    style={{ flex: 1, padding: '12px' }}
+                  >
+                    Далее
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Reunited Question */}
+            {deleteStep === 'reunited_question' && (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  width: '60px',
+                  height: '60px',
+                  borderRadius: '50%',
+                  background: 'rgba(249, 115, 22, 0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 20px',
+                  color: 'var(--primary)'
+                }}>
+                  <Heart size={32} fill="var(--primary)" color="var(--primary)" />
+                </div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '12px', color: '#fff' }}>
+                  {getTranslation('confirmReunitedQuestion', lang)}
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '24px', lineHeight: '1.5' }}>
+                  {lang === 'kk' 
+                    ? 'Егер үй жануарыңыз табылса, оны «Сәтті оқиғалар» бөліміне қосамыз. Оның контактілері құпиялылығыңыз үшін жасырылады.'
+                    : 'Если ваш питомец нашелся, мы добавим его в раздел «Счастливые истории». Его контакты будут скрыты для вашей приватности.'}
+                </p>
+                {deleteError && (
+                  <p style={{ color: '#f87171', fontSize: '0.85rem', marginBottom: '16px' }}>{deleteError}</p>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <button 
+                    className="btn btn-primary" 
+                    onClick={() => {
+                      setDeleteStep('story_input');
+                    }}
+                    style={{ 
+                      padding: '14px', 
+                      background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                      boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)'
+                    }}
+                  >
+                    {getTranslation('confirmReunitedYes', lang)}
+                  </button>
+                  <button 
+                    className="btn btn-secondary" 
+                    disabled={submitting}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      setDeleteError(null);
+                      const success = await onDelete(cat.id, passcode);
+                      setSubmitting(false);
+                      if (success) {
+                        setIsDeleteModalOpen(false);
+                      } else {
+                        setDeleteError(lang === 'kk' ? 'Рұқсат коды қате. Қайта байқап көріңіз.' : 'Неверный код доступа. Попробуйте еще раз.');
+                        setDeleteStep('passcode');
+                      }
+                    }}
+                    style={{ padding: '12px', border: '1px solid rgba(255,255,255,0.05)' }}
+                  >
+                    {submitting ? (lang === 'kk' ? 'Өшіру...' : 'Удаление...') : getTranslation('confirmReunitedNo', lang)}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: Happy Story Input */}
+            {deleteStep === 'story_input' && (
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '12px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Heart size={20} fill="var(--primary)" color="var(--primary)" />
+                  {getTranslation('storyTitle', lang)}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '16px', lineHeight: '1.4' }}>
+                  {lang === 'kk'
+                    ? 'Мысығыңыздың қалай табылғанымен бөлісе аласыз. Бұл басқа иелерге үміт береді!'
+                    : 'Вы можете поделиться тем, как котик нашелся. Это подарит надежду другим владельцам!'}
+                </p>
+                <textarea 
+                  placeholder={getTranslation('storyPlaceholder', lang)}
+                  value={story}
+                  onChange={(e) => setStory(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '110px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    resize: 'none',
+                    outline: 'none',
+                    marginBottom: '16px',
+                    fontFamily: 'inherit',
+                    lineHeight: '1.4'
+                  }}
+                />
+                {deleteError && (
+                  <p style={{ color: '#f87171', fontSize: '0.85rem', marginBottom: '16px' }}>{deleteError}</p>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <button 
+                    className="btn btn-primary" 
+                    disabled={submitting}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      setDeleteError(null);
+                      const success = await onMarkReunited(cat.id, passcode, story);
+                      setSubmitting(false);
+                      if (success) {
+                        playFanfare();
+                        setDeleteStep('success');
+                        setTimeout(() => {
+                          setIsDeleteModalOpen(false);
+                        }, 4000);
+                      } else {
+                        setDeleteError(lang === 'kk' ? 'Рұқсат коды қате. Қайта байқап көріңіз.' : 'Неверный код доступа. Пожалуйста, вернитесь к вводу кода.');
+                        setDeleteStep('passcode');
+                      }
+                    }}
+                    style={{ padding: '12px' }}
+                  >
+                    {submitting ? (lang === 'kk' ? 'Сақталуда...' : 'Сохранение...') : getTranslation('storySaveBtn', lang)}
+                  </button>
+                  <button 
+                    className="btn btn-secondary" 
+                    disabled={submitting}
+                    onClick={async () => {
+                      setSubmitting(true);
+                      setDeleteError(null);
+                      const success = await onMarkReunited(cat.id, passcode, '');
+                      setSubmitting(false);
+                      if (success) {
+                        playFanfare();
+                        setDeleteStep('success');
+                        setTimeout(() => {
+                          setIsDeleteModalOpen(false);
+                        }, 4000);
+                      } else {
+                        setDeleteError(lang === 'kk' ? 'Рұқсат коды қате. Қайта байқап көріңіз.' : 'Неверный код доступа. Пожалуйста, вернитесь к вводу кода.');
+                        setDeleteStep('passcode');
+                      }
+                    }}
+                    style={{ padding: '10px', fontSize: '0.8rem', opacity: 0.7 }}
+                  >
+                    {getTranslation('storySkipBtn', lang)}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 4: Celebration Success */}
+            {deleteStep === 'success' && (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <div style={{
+                  fontSize: '4rem',
+                  marginBottom: '16px',
+                }}>
+                  🎉
+                </div>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'var(--primary)', marginBottom: '12px' }}>
+                  {getTranslation('storySuccess', lang)}
+                </h3>
+                <p style={{ fontSize: '0.95rem', color: '#fff', lineHeight: '1.5' }}>
+                  {lang === 'kk' ? 'Біз сіз бен мысығыңыз үшін шын жүректен қуаныштымыз! ❤️' : 'Мы искренне рады за вас и вашего котика! ❤️'}
+                </p>
+              </div>
+            )}
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+const ConfettiCanvas = () => {
+  const canvasRef = React.useRef(null);
+  
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    let animationFrameId;
+    
+    const resizeCanvas = () => {
+      if (canvas && canvas.parentElement) {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+      }
+    };
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    const colors = ['#f97316', '#ea580c', '#3b82f6', '#10b981', '#f59e0b', '#ec4899'];
+    const particles = Array.from({ length: 80 }).map(() => ({
+      x: Math.random() * (canvas.width || 400),
+      y: Math.random() * (canvas.height || 400) - (canvas.height || 400),
+      r: Math.random() * 6 + 4,
+      d: Math.random() * (canvas.height || 400),
+      color: colors[Math.floor(Math.random() * colors.length)],
+      tilt: Math.random() * 10 - 5,
+      tiltAngleIncremental: Math.random() * 0.07 + 0.02,
+      tiltAngle: 0
+    }));
+    
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach((p, idx) => {
+        p.tiltAngle += p.tiltAngleIncremental;
+        p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+        p.x += Math.sin(p.tiltAngle);
+        p.tilt = Math.sin(p.tiltAngle - idx/3) * 15;
+        
+        ctx.beginPath();
+        ctx.lineWidth = p.r;
+        ctx.strokeStyle = p.color;
+        ctx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+        ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+        ctx.stroke();
+        
+        if (p.y > canvas.height) {
+          particles[idx] = {
+            x: Math.random() * canvas.width,
+            y: -20,
+            r: p.r,
+            d: p.d,
+            color: p.color,
+            tilt: p.tilt,
+            tiltAngleIncremental: p.tiltAngleIncremental,
+            tiltAngle: p.tiltAngle
+          };
+        }
+      });
+      
+      animationFrameId = requestAnimationFrame(draw);
+    };
+    
+    draw();
+    
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, []);
+  
+  return (
+    <canvas 
+      ref={canvasRef} 
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 100
+      }}
+    />
+  );
+};
