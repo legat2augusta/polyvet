@@ -63,6 +63,20 @@ const COLOR_KEYS = {
   'Двухцветный': 'colorBicolor'
 };
 
+const COLOR_EXAMPLES = {
+  'Рыжий': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=200&auto=format&fit=crop',
+  'Черный': 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?q=80&w=200&auto=format&fit=crop',
+  'Белый': 'https://images.unsplash.com/photo-1618826411640-d6df44dd3f7a?q=80&w=200&auto=format&fit=crop',
+  'Серый': 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?q=80&w=200&auto=format&fit=crop',
+  'Трехцветный': 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?q=80&w=200&auto=format&fit=crop',
+  'Сиамский': 'https://images.unsplash.com/photo-1513245543132-31f507417b26?q=80&w=200&auto=format&fit=crop',
+  'Полосатый': 'https://images.unsplash.com/photo-1513360309081-36f5e878498d?q=80&w=200&auto=format&fit=crop',
+  'Черепаховый': 'https://images.unsplash.com/photo-1606214174585-fe31582d63e6?q=80&w=200&auto=format&fit=crop',
+  'Шоколадный': 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?q=80&w=200&auto=format&fit=crop',
+  'Кремовый': 'https://images.unsplash.com/photo-1574158622643-69d34d72650a?q=80&w=200&auto=format&fit=crop',
+  'Двухцветный': 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?q=80&w=200&auto=format&fit=crop'
+};
+
 const DEMO_KEYS = {
   'Рыжий': 'formDemoNameGinger',
   'Черный': 'formDemoNameBlack',
@@ -128,45 +142,27 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
 
   const handlePhoneChange = (e) => {
     const value = e.target.value;
-    const isDeleting = value.length < contactPhone.length;
-    
-    if (value === '') {
-      setContactPhone('');
-      return;
-    }
-    
-    // Extract only digits
     let digits = value.replace(/\D/g, '');
     
-    // If deleting and we only have the country code left, let the user clear it
-    if (isDeleting && digits === '7') {
-      setContactPhone('');
-      return;
+    // Auto-strip leading 7 or 8 if they pasted/typed a full 11-digit number
+    if (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8'))) {
+      digits = digits.substring(1);
     }
     
-    // If they typed or pasted a 10-digit number starting with 7
-    if (digits.length === 10 && (digits.startsWith('7') || digits.startsWith('70') || digits.startsWith('74') || digits.startsWith('77') || digits.startsWith('708') || digits.startsWith('707') || digits.startsWith('705') || digits.startsWith('701') || digits.startsWith('702') || digits.startsWith('777') || digits.startsWith('775') || digits.startsWith('778') || digits.startsWith('776') || digits.startsWith('747'))) {
-      digits = '7' + digits;
-    } else if (digits.startsWith('8') && digits.length === 11) {
-      digits = '7' + digits.substring(1);
-    } else if (digits.length > 0 && !digits.startsWith('7')) {
-      digits = '7' + digits;
-    }
+    digits = digits.substring(0, 10);
     
-    digits = digits.substring(0, 11);
-    
-    let formatted = '+7';
-    if (digits.length > 1) {
-      formatted += ' (' + digits.substring(1, 4);
+    let formatted = '';
+    if (digits.length > 0) {
+      formatted += '(' + digits.substring(0, 3);
     }
-    if (digits.length > 4) {
-      formatted += ') ' + digits.substring(4, 7);
+    if (digits.length > 3) {
+      formatted += ') ' + digits.substring(3, 6);
     }
-    if (digits.length > 7) {
-      formatted += '-' + digits.substring(7, 9);
+    if (digits.length > 6) {
+      formatted += '-' + digits.substring(6, 8);
     }
-    if (digits.length > 9) {
-      formatted += '-' + digits.substring(9, 11);
+    if (digits.length > 8) {
+      formatted += '-' + digits.substring(8, 10);
     }
     
     setContactPhone(formatted);
@@ -282,7 +278,7 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
         date,
         description: description.trim(),
         contact_name: contactName.trim() || 'Аноним',
-        contact_phone: contactPhone.trim(),
+        contact_phone: contactPhone.trim() ? '+7 ' + contactPhone.trim() : '',
         photo_url: uploadedUrls[0] || '',
         photo_url_2: uploadedUrls[1] || null,
         photo_url_3: uploadedUrls[2] || null,
@@ -543,19 +539,38 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
               />
             </div>
 
-            {/* Color */}
-            <div className="input-group">
+            {/* Color with preview example thumbnail */}
+            <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <span className="input-label">{getTranslation('formColorLabel', lang)}</span>
-              <select 
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="form-select"
-                disabled={submitting}
-              >
-                {COLORS.map(c => (
-                  <option key={c} value={c}>{getTranslation(COLOR_KEYS[c], lang)}</option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                <select 
+                  value={color}
+                  onChange={(e) => setColor(e.target.value)}
+                  className="form-select"
+                  disabled={submitting}
+                  style={{ flexGrow: 1 }}
+                >
+                  {COLORS.map(c => (
+                    <option key={c} value={c}>{getTranslation(COLOR_KEYS[c], lang)}</option>
+                  ))}
+                </select>
+                <div style={{
+                  width: '70px',
+                  height: '70px',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  background: '#0c0f1d',
+                  flexShrink: 0,
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
+                }}>
+                  <img 
+                    src={COLOR_EXAMPLES[color]} 
+                    alt={color} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -636,16 +651,47 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
             {/* Phone */}
             <div className="input-group">
               <span className="input-label">{getTranslation('formContactPhoneLabel', lang)}</span>
-              <input 
-                type="text" 
-                placeholder="+7 (7xx) xxx-xx-xx"
-                value={contactPhone}
-                onChange={handlePhoneChange}
-                maxLength={18}
-                className="form-input"
-                required
-                disabled={submitting}
-              />
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '14px',
+                overflow: 'hidden',
+                height: '46px'
+              }}>
+                <span style={{
+                  padding: '0 16px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  color: 'var(--text-secondary)',
+                  borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+                  userSelect: 'none',
+                  fontWeight: 'bold',
+                  display: 'flex',
+                  alignItems: 'center',
+                  height: '100%'
+                }}>
+                  +7
+                </span>
+                <input 
+                  type="text" 
+                  placeholder="(707) 123-45-67"
+                  value={contactPhone}
+                  onChange={handlePhoneChange}
+                  className="form-input"
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    margin: 0,
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: 0,
+                    boxShadow: 'none'
+                  }}
+                  required
+                  disabled={submitting}
+                />
+              </div>
             </div>
           </div>
 
