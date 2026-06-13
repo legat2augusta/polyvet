@@ -64,17 +64,17 @@ const COLOR_KEYS = {
 };
 
 const COLOR_EXAMPLES = {
-  'Рыжий': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=200&auto=format&fit=crop',
-  'Черный': 'https://images.unsplash.com/photo-1533738363-b7f9aef128ce?q=80&w=200&auto=format&fit=crop',
+  'Рыжий': '/assets/cats/ginger.png',
+  'Черный': '/assets/cats/black.png',
   'Белый': 'https://images.unsplash.com/photo-1618826411640-d6df44dd3f7a?q=80&w=200&auto=format&fit=crop',
   'Серый': 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?q=80&w=200&auto=format&fit=crop',
-  'Трехцветный': 'https://images.unsplash.com/photo-1573865526739-10659fec78a5?q=80&w=200&auto=format&fit=crop',
-  'Сиамский': 'https://images.unsplash.com/photo-1513245543132-31f507417b26?q=80&w=200&auto=format&fit=crop',
-  'Полосатый': 'https://images.unsplash.com/photo-1513360309081-36f5e878498d?q=80&w=200&auto=format&fit=crop',
+  'Трехцветный': '/assets/cats/calico.png',
+  'Сиамский': '/assets/cats/siamese.png',
+  'Полосатый': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=200&auto=format&fit=crop',
   'Черепаховый': 'https://images.unsplash.com/photo-1606214174585-fe31582d63e6?q=80&w=200&auto=format&fit=crop',
-  'Шоколадный': 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?q=80&w=200&auto=format&fit=crop',
-  'Кремовый': 'https://images.unsplash.com/photo-1574158622643-69d34d72650a?q=80&w=200&auto=format&fit=crop',
-  'Двухцветный': 'https://images.unsplash.com/photo-1526336024174-e58f5cdd8e13?q=80&w=200&auto=format&fit=crop'
+  'Шоколадный': 'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?q=80&w=200&auto=format&fit=crop',
+  'Кремовый': 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?q=80&w=200&auto=format&fit=crop',
+  'Двухцветный': '/assets/cats/white_grey.png'
 };
 
 const DEMO_KEYS = {
@@ -144,8 +144,9 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
     const value = e.target.value;
     let digits = value.replace(/\D/g, '');
     
-    // Auto-strip leading 7 or 8 if they pasted/typed a full 11-digit number
-    if (digits.length === 11 && (digits.startsWith('7') || digits.startsWith('8'))) {
+    // Auto-strip country code prefix if it's a full 11-digit number starting with country code 7 or 8
+    // and followed by a valid operator code starting with 7 or 9 (Kazakhstan or Russia)
+    if (digits.length === 11 && (digits.startsWith('77') || digits.startsWith('79') || digits.startsWith('87') || digits.startsWith('89'))) {
       digits = digits.substring(1);
     }
     
@@ -678,6 +679,7 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
                   placeholder="(707) 123-45-67"
                   value={contactPhone}
                   onChange={handlePhoneChange}
+                  maxLength={15}
                   className="form-input"
                   style={{
                     border: 'none',
