@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Camera, ArrowLeft, Upload, Sparkles, Check, MapPin, Loader } from 'lucide-react';
+import { Camera, ArrowLeft, Upload, Sparkles, Check, MapPin, Loader, X } from 'lucide-react';
 import CatsMap from './CatsMap';
 import { supabase } from '../supabaseClient';
 
@@ -40,7 +40,9 @@ export default function ReportForm({ onSubmit, onCancel }) {
   const [description, setDescription] = useState('');
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
-  const [photo, setPhoto] = useState(DEMO_PHOTOS[0].url); // Default to first demo photo
+  
+  // Array to store up to 3 photos
+  const [photos, setPhotos] = useState([DEMO_PHOTOS[0].url]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
@@ -52,10 +54,14 @@ export default function ReportForm({ onSubmit, onCancel }) {
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (photos.length >= 3) {
+        alert('Максимально можно загрузить до 3-х фотографий.');
+        return;
+      }
       setUploading(true);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPhoto(reader.result);
+        setPhotos(prev => [...prev, reader.result]);
         setUploading(false);
       };
       reader.readAsDataURL(file);
@@ -63,43 +69,63 @@ export default function ReportForm({ onSubmit, onCancel }) {
   };
 
   const handleSelectDemo = (url) => {
-    setPhoto(url);
+    if (photos.length >= 3) {
+      alert('Максимально можно загрузить до 3-х фотографий.');
+      return;
+    }
+    // Check if already exists in selection to avoid duplicates
+    if (photos.includes(url)) {
+      alert('Это фото уже добавлено.');
+      return;
+    }
+    setPhotos(prev => [...prev, url]);
+  };
+
+  const handleDeletePhoto = (indexToDelete) => {
+    setPhotos(prev => prev.filter((_, idx) => idx !== indexToDelete));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!photo) {
-      alert('Пожалуйста, добавьте фотографию кошки.');
+    if (photos.length === 0) {
+      alert('Пожалуйста, добавьте хотя бы одну фотографию кошки.');
       return;
     }
 
     setSubmitting(true);
     try {
-      let finalPhotoUrl = photo;
+      const uploadedUrls = [];
 
-      // If user uploaded a new local file (represented as base64 string), upload to Supabase Storage
-      if (photo.startsWith('data:image/')) {
-        const response = await fetch(photo);
-        const blob = await response.blob();
+      for (let i = 0; i < photos.length; i++) {
+        const photoItem = photos[i];
         
-        const fileExt = blob.type.split('/')[1] || 'png';
-        const fileName = `cats/${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
+        // If it's a new local image (represented as base64 string), upload to Supabase Storage
+        if (photoItem.startsWith('data:image/')) {
+          const response = await fetch(photoItem);
+          const blob = await response.blob();
+          
+          const fileExt = blob.type.split('/')[1] || 'png';
+          const fileName = `cats/${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
 
-        const { error: uploadError } = await supabase.storage
-          .from('cat-photos')
-          .upload(fileName, blob, {
-            contentType: blob.type
-          });
+          const { error: uploadError } = await supabase.storage
+            .from('cat-photos')
+            .upload(fileName, blob, {
+              contentType: blob.type
+            });
 
-        if (uploadError) {
-          throw uploadError;
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          const { data: { publicUrl } } = supabase.storage
+            .from('cat-photos')
+            .getPublicUrl(fileName);
+
+          uploadedUrls.push(publicUrl);
+        } else {
+          // If it is a demo photo (already hosted), use it directly
+          uploadedUrls.push(photoItem);
         }
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('cat-photos')
-          .getPublicUrl(fileName);
-
-        finalPhotoUrl = publicUrl;
       }
 
       const newCat = {
@@ -111,7 +137,9 @@ export default function ReportForm({ onSubmit, onCancel }) {
         description: description.trim(),
         contact_name: contactName.trim() || 'Аноним',
         contact_phone: contactPhone.trim(),
-        photo_url: finalPhotoUrl,
+        photo_url: uploadedUrls[0] || '',
+        photo_url_2: uploadedUrls[1] || null,
+        photo_url_3: uploadedUrls[2] || null,
         latitude: position[0],
         longitude: position[1]
       };
@@ -119,7 +147,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
       await onSubmit(newCat);
     } catch (err) {
       console.error('Ошибка при отправке объявления:', err);
-      alert('Не удалось загрузить фото или данные. Проверьте правильность подключения к Supabase и права доступа Bucket. Ошибка: ' + err.message);
+      alert('Не удалось загрузить фото или данные. Ошибка: ' + err.message);
     } finally {
       setSubmitting(false);
     }
@@ -141,7 +169,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
       <div className="glass-card" style={{ padding: '32px', borderRadius: '24px', textAlign: 'left' }}>
         <h2 style={{ marginBottom: '8px', fontSize: '1.8rem' }}>Подать новое объявление</h2>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-          Заполните данные о кошке. После публикации данные отправятся в облачную БД Supabase, и система проверит совпадения.
+          Заполните данные о кошке. Вы можете загрузить до 3-х разных фотографий (например, с разных ракурсов).
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -184,128 +212,147 @@ export default function ReportForm({ onSubmit, onCancel }) {
 
           {/* Photo upload block */}
           <div className="input-group" style={{ marginBottom: '24px' }}>
-            <span className="input-label">Фотография кошки (важно для ИИ-поиска)</span>
+            <span className="input-label">Фотографии кошки (максимум 3 ракурса)</span>
             
             <div style={{
               display: 'grid',
-              gridTemplateColumns: '1fr',
-              gap: '20px'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+              gap: '16px',
+              marginBottom: '16px'
             }}>
-              {/* Main Photo Dropzone */}
-              <div 
-                onClick={() => !submitting && fileInputRef.current.click()}
-                style={{
-                  border: '2px dashed rgba(255, 255, 255, 0.15)',
-                  borderRadius: '16px',
-                  padding: '24px',
-                  textAlign: 'center',
-                  cursor: submitting ? 'not-allowed' : 'pointer',
-                  background: 'rgba(255,255,255,0.02)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  minHeight: '200px',
-                  transition: 'var(--transition-smooth)',
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-                onMouseOver={(e) => !submitting && (e.currentTarget.style.borderColor = 'var(--primary)')}
-                onMouseOut={(e) => !submitting && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)')}
-              >
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  accept="image/*" 
-                  style={{ display: 'none' }} 
-                  disabled={submitting}
-                />
-                
-                {photo ? (
-                  <>
-                    <img 
-                      src={photo} 
-                      alt="Превью" 
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        maxHeight: '260px',
-                        objectFit: 'contain',
-                        borderRadius: '8px'
-                      }}
-                    />
+              {/* Render selected photos */}
+              {photos.map((url, index) => (
+                <div 
+                  key={index}
+                  style={{
+                    height: '150px',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    background: '#0c0f1d'
+                  }}
+                >
+                  <img 
+                    src={url} 
+                    alt={`Загруженная ${index + 1}`} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                  {index === 0 && (
                     <div style={{
                       position: 'absolute',
-                      bottom: '8px',
-                      right: '8px',
-                      background: 'rgba(0,0,0,0.6)',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      fontSize: '0.75rem',
+                      top: '8px',
+                      left: '8px',
+                      background: 'var(--primary)',
                       color: '#fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
+                      fontSize: '0.65rem',
+                      fontWeight: 'bold',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      textTransform: 'uppercase'
                     }}>
-                      <Camera size={12} /> Изменить
+                      Главная
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDeletePhoto(index)}
+                    disabled={submitting}
+                    style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      background: 'rgba(239, 68, 68, 0.9)',
+                      border: 'none',
                       borderRadius: '50%',
-                      background: 'rgba(255,255,255,0.05)',
+                      width: '24px',
+                      height: '24px',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <Upload size={20} color="var(--text-secondary)" />
-                    </div>
-                    <div>
-                      <strong style={{ color: 'var(--text-primary)' }}>Нажмите для загрузки</strong>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                        Поддерживаются PNG, JPG, JPEG
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#fff'
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
 
-              {/* Demo Photos Quick Select */}
-              <div>
-                <span className="input-label" style={{ fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>
-                  Нет фото? Выберите образец для тестирования:
-                </span>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {DEMO_PHOTOS.map((demo) => (
+              {/* Add photo slot (if less than 3) */}
+              {photos.length < 3 && (
+                <div 
+                  onClick={() => !submitting && fileInputRef.current.click()}
+                  style={{
+                    height: '150px',
+                    border: '2px dashed rgba(255, 255, 255, 0.15)',
+                    borderRadius: '16px',
+                    cursor: submitting ? 'not-allowed' : 'pointer',
+                    background: 'rgba(255,255,255,0.02)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    transition: 'var(--transition-smooth)'
+                  }}
+                  onMouseOver={(e) => !submitting && (e.currentTarget.style.borderColor = 'var(--primary)')}
+                  onMouseOut={(e) => !submitting && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)')}
+                >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    accept="image/*" 
+                    style={{ display: 'none' }} 
+                    disabled={submitting}
+                  />
+                  {uploading ? (
+                    <Loader size={24} className="animate-spin" color="var(--primary)" />
+                  ) : (
+                    <>
+                      <Upload size={20} color="var(--text-secondary)" />
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Загрузить фото</span>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Demo Photos Quick Select */}
+            <div>
+              <span className="input-label" style={{ fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>
+                Добавить готовый образец для тестирования:
+              </span>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {DEMO_PHOTOS.map((demo) => {
+                  const isSelected = photos.includes(demo.url);
+                  return (
                     <button
                       key={demo.name}
                       type="button"
-                      disabled={submitting}
+                      disabled={submitting || isSelected || photos.length >= 3}
                       onClick={() => handleSelectDemo(demo.url)}
                       style={{
                         padding: '6px 12px',
                         borderRadius: '8px',
-                        background: photo === demo.url ? 'var(--primary-light)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${photo === demo.url ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
-                        color: photo === demo.url ? '#fff' : 'var(--text-secondary)',
+                        background: isSelected ? 'var(--primary-light)' : 'rgba(255,255,255,0.03)',
+                        border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
+                        color: isSelected ? '#fff' : 'var(--text-secondary)',
                         fontSize: '0.8rem',
-                        cursor: submitting ? 'not-allowed' : 'pointer',
+                        cursor: (submitting || isSelected || photos.length >= 3) ? 'not-allowed' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
-                        transition: 'var(--transition-smooth)'
+                        transition: 'var(--transition-smooth)',
+                        opacity: (isSelected || photos.length >= 3) ? 0.5 : 1
                       }}
                     >
-                      {photo === demo.url && <Check size={12} color="var(--primary)" />}
+                      {isSelected && <Check size={12} color="var(--primary)" />}
                       {demo.name}
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -465,8 +512,8 @@ export default function ReportForm({ onSubmit, onCancel }) {
             >
               {submitting ? (
                 <>
-                  <Loader size={18} className="animate-spin" />
-                  Публикация...
+                  <Loader size={18} className="animate-spin" style={{ marginRight: '8px' }} />
+                  Загрузка файлов ({photos.length})...
                 </>
               ) : (
                 <>

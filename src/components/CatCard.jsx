@@ -1,9 +1,32 @@
-import React from 'react';
-import { Calendar, MapPin, Cpu } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function CatCard({ cat, onScan }) {
   const isLost = cat.status === 'lost';
-  
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  // Extract all non-empty photos for the carousel
+  const cardPhotos = [
+    cat.photo_url || cat.photo,
+    cat.photo_url_2,
+    cat.photo_url_3
+  ].filter(Boolean);
+
+  const handleNextPhoto = (e) => {
+    e.stopPropagation(); // Prevent card clicks
+    setCurrentPhotoIndex((prev) => (prev + 1) % cardPhotos.length);
+  };
+
+  const handlePrevPhoto = (e) => {
+    e.stopPropagation(); // Prevent card clicks
+    setCurrentPhotoIndex((prev) => (prev - 1 + cardPhotos.length) % cardPhotos.length);
+  };
+
+  const handleDotClick = (e, index) => {
+    e.stopPropagation();
+    setCurrentPhotoIndex(index);
+  };
+
   return (
     <div className="glass-card" style={{
       display: 'flex',
@@ -24,7 +47,7 @@ export default function CatCard({ cat, onScan }) {
         </span>
       </div>
 
-      {/* Cat Photo */}
+      {/* Cat Photo / Carousel */}
       <div style={{
         width: '100%',
         height: '220px',
@@ -33,7 +56,7 @@ export default function CatCard({ cat, onScan }) {
         background: '#0c0f1d'
       }}>
         <img 
-          src={cat.photo_url || cat.photo} 
+          src={cardPhotos[currentPhotoIndex]} 
           alt={cat.breed || 'Кошка'} 
           style={{
             width: '100%',
@@ -42,6 +65,94 @@ export default function CatCard({ cat, onScan }) {
             transition: 'transform 0.5s ease'
           }}
         />
+
+        {/* Carousel Controls (if multiple photos exist) */}
+        {cardPhotos.length > 1 && (
+          <>
+            {/* Left Arrow */}
+            <button
+              onClick={handlePrevPhoto}
+              style={{
+                position: 'absolute',
+                left: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(0, 0, 0, 0.5)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                cursor: 'pointer',
+                zIndex: 5,
+                transition: 'var(--transition-smooth)'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(249, 115, 22, 0.8)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'}
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            {/* Right Arrow */}
+            <button
+              onClick={handleNextPhoto}
+              style={{
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'rgba(0, 0, 0, 0.5)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                cursor: 'pointer',
+                zIndex: 5,
+                transition: 'var(--transition-smooth)'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = 'rgba(249, 115, 22, 0.8)'}
+              onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'}
+            >
+              <ChevronRight size={18} />
+            </button>
+
+            {/* Dot Indicators */}
+            <div style={{
+              position: 'absolute',
+              bottom: '12px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              display: 'flex',
+              gap: '6px',
+              zIndex: 5
+            }}>
+              {cardPhotos.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={(e) => handleDotClick(e, idx)}
+                  style={{
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    border: 'none',
+                    background: currentPhotoIndex === idx ? 'var(--primary)' : 'rgba(255, 255, 255, 0.5)',
+                    cursor: 'pointer',
+                    padding: 0,
+                    boxShadow: currentPhotoIndex === idx ? '0 0 8px var(--primary)' : 'none',
+                    transition: 'var(--transition-smooth)'
+                  }}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Content */}
