@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2, Heart, X, Share2, Phone, User } from 'lucide-react';
+import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2, Heart, X, Share2, Phone, User, MessageSquare, Mail } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
+import { supabase } from '../supabaseClient';
 
 const COLOR_KEYS = {
   'Рыжий': 'colorGinger',
@@ -59,6 +60,144 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
   const [story, setStory] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
+
+  // Messaging & Web Inbox States
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [senderName, setSenderName] = useState('');
+  const [senderContact, setSenderContact] = useState('');
+  const [messageText, setMessageText] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
+
+  const [isInboxModalOpen, setIsInboxModalOpen] = useState(false);
+  const [inboxPasscode, setInboxPasscode] = useState('');
+  const [isInboxUnlocked, setIsInboxUnlocked] = useState(false);
+  const [verifiedInboxPasscode, setVerifiedInboxPasscode] = useState('');
+  const [inboxMessages, setInboxMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [inboxError, setInboxError] = useState(null);
+
+  const handleSendMessage = async (e) => {
+    e.preventDefault();
+    if (!senderName || !senderContact || !messageText) {
+      alert(getTranslation('msgErrorAlert', lang));
+      return;
+    }
+    setSendingMsg(true);
+    try {
+      const { error } = await supabase
+        .from('cat_messages')
+        .insert([{
+          cat_id: cat.id,
+          sender_name: senderName,
+          sender_contact: senderContact,
+          message_text: messageText
+        }]);
+
+      if (error) throw error;
+
+      // Trigger Telegram notification relay serverless webhook
+      try {
+        await fetch('/api/send-telegram-notification', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cat_id: cat.id,
+            sender_name: senderName,
+            sender_contact: senderContact,
+            message_text: messageText
+          })
+        });
+      } catch (teleErr) {
+        console.warn('Failed to relay telegram alert:', teleErr);
+      }
+
+      alert(getTranslation('msgSuccessAlert', lang));
+      setIsSendModalOpen(false);
+      setSenderName('');
+      setSenderContact('');
+      setMessageText('');
+    } catch (err) {
+      console.error('Failed to send message:', err);
+      alert(getTranslation('msgErrorAlert', lang));
+    } finally {
+      setSendingMsg(false);
+    }
+  };
+
+  const handleOpenInbox = () => {
+    let localPass = '';
+    try {
+      const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+      localPass = myPosts[cat.id] || '';
+    } catch (err) {
+      console.warn('Failed to parse my posts:', err);
+    }
+
+    if (localPass) {
+      setVerifiedInboxPasscode(localPass);
+      setIsInboxUnlocked(true);
+      fetchInboxMessages(localPass);
+    } else {
+      setInboxPasscode('');
+      setIsInboxUnlocked(false);
+      setInboxMessages([]);
+    }
+    setInboxError(null);
+    setIsInboxModalOpen(true);
+  };
+
+  const fetchInboxMessages = async (pass) => {
+    setLoadingMessages(true);
+    setInboxError(null);
+    try {
+      const { data, error } = await supabase.rpc('get_cat_messages', {
+        input_cat_id: cat.id,
+        input_passcode: pass
+      });
+
+      if (error) throw error;
+      setInboxMessages(data || []);
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+      setInboxError(getTranslation('msgPINIncorrect', lang));
+      setIsInboxUnlocked(false);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  const handleVerifyInboxPasscode = async (e) => {
+    e.preventDefault();
+    if (!inboxPasscode) return;
+    setLoadingMessages(true);
+    setInboxError(null);
+    try {
+      const { data, error } = await supabase.rpc('get_cat_messages', {
+        input_cat_id: cat.id,
+        input_passcode: inboxPasscode
+      });
+
+      if (error) throw error;
+
+      setInboxMessages(data || []);
+      setVerifiedInboxPasscode(inboxPasscode);
+      setIsInboxUnlocked(true);
+      
+      // Save passcode ownership locally
+      try {
+        const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+        myPosts[cat.id] = inboxPasscode;
+        localStorage.setItem('kotopoisk_my_posts', JSON.stringify(myPosts));
+      } catch (err) {
+        console.warn('Failed to update localStorage:', err);
+      }
+    } catch (err) {
+      console.error('Verification error:', err);
+      setInboxError(getTranslation('msgPINIncorrect', lang));
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
 
   const playFanfare = () => {
     try {
@@ -630,6 +769,32 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
               </button>
             )}
             
+            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsSendModalOpen(true);
+                }}
+                style={{ flex: 1, padding: '8px', fontSize: '0.8rem', justifyContent: 'center', fontWeight: '600', gap: '6px' }}
+              >
+                <MessageSquare size={14} />
+                {getTranslation('msgSendBtn', lang)}
+              </button>
+              
+              <button 
+                className="btn btn-secondary" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleOpenInbox();
+                }}
+                style={{ flex: 1, padding: '8px', fontSize: '0.8rem', justifyContent: 'center', fontWeight: '600', gap: '6px' }}
+              >
+                <Mail size={14} />
+                {getTranslation('cardMessagesBtn', lang)}
+              </button>
+            </div>
+            
             <button 
               className="btn btn-accent btn-pulse-green" 
               style={{ width: '100%', padding: '10px', fontSize: '0.85rem' }}
@@ -932,6 +1097,397 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
               </div>
             )}
             
+          </div>
+        </div>
+      )}
+
+      {/* Send Message Modal */}
+      {isSendModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(5, 8, 16, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px',
+        }} onClick={(e) => {
+          e.stopPropagation();
+          setIsSendModalOpen(false);
+        }}>
+          
+          <form onSubmit={handleSendMessage} onClick={(e) => e.stopPropagation()} style={{
+            background: 'linear-gradient(135deg, #131a35 0%, #0b0f19 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(249, 115, 22, 0.05)',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '480px',
+            padding: '30px',
+            position: 'relative',
+            color: '#fff',
+            overflow: 'hidden'
+          }}>
+            <button 
+              type="button"
+              onClick={() => setIsSendModalOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'var(--transition-smooth)'
+              }}
+            >
+              <X size={16} />
+            </button>
+
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '8px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MessageSquare size={20} color="var(--primary)" />
+              {getTranslation('msgSendModalTitle', lang)}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+              {getTranslation('msgSendPrompt', lang)}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>
+                  {getTranslation('msgSenderNameLabel', lang)}
+                </label>
+                <input 
+                  type="text"
+                  required
+                  placeholder={getTranslation('msgSenderNamePlaceholder', lang)}
+                  value={senderName}
+                  onChange={(e) => setSenderName(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>
+                  {getTranslation('msgSenderContactLabel', lang)}
+                </label>
+                <input 
+                  type="text"
+                  required
+                  placeholder={getTranslation('msgSenderContactPlaceholder', lang)}
+                  value={senderContact}
+                  onChange={(e) => setSenderContact(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    outline: 'none'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', fontWeight: '500' }}>
+                  {getTranslation('msgTextLabel', lang)}
+                </label>
+                <textarea 
+                  required
+                  placeholder={getTranslation('msgTextPlaceholder', lang)}
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  style={{
+                    width: '100%',
+                    height: '100px',
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    fontSize: '0.9rem',
+                    resize: 'none',
+                    outline: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                type="button"
+                className="btn btn-secondary" 
+                onClick={() => setIsSendModalOpen(false)}
+                style={{ flex: 1, padding: '12px' }}
+              >
+                {getTranslation('formCancelBtn', lang)}
+              </button>
+              <button 
+                type="submit"
+                disabled={sendingMsg}
+                className="btn btn-primary" 
+                style={{ flex: 1, padding: '12px' }}
+              >
+                {sendingMsg ? (lang === 'kk' ? 'Жіберілуде...' : 'Отправка...') : getTranslation('msgSubmitBtn', lang)}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Inbox Viewer Modal */}
+      {isInboxModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(5, 8, 16, 0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px',
+        }} onClick={(e) => {
+          e.stopPropagation();
+          setIsInboxModalOpen(false);
+        }}>
+          
+          <div onClick={(e) => e.stopPropagation()} style={{
+            background: 'linear-gradient(135deg, #131a35 0%, #0b0f19 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 40px rgba(249, 115, 22, 0.05)',
+            borderRadius: '20px',
+            width: '100%',
+            maxWidth: '520px',
+            padding: '30px',
+            position: 'relative',
+            color: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+            maxHeight: '85vh',
+            overflow: 'hidden'
+          }}>
+            <button 
+              onClick={() => setIsInboxModalOpen(false)}
+              style={{
+                position: 'absolute',
+                top: '20px',
+                right: '20px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                transition: 'var(--transition-smooth)'
+              }}
+            >
+              <X size={16} />
+            </button>
+
+            {!isInboxUnlocked ? (
+              <form onSubmit={handleVerifyInboxPasscode} style={{ display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '16px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Mail size={20} color="var(--primary)" />
+                  {getTranslation('msgPINTitle', lang)}
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '20px', lineHeight: '1.5' }}>
+                  {getTranslation('msgPINPrompt', lang)}
+                </p>
+                <input 
+                  type="text"
+                  required
+                  placeholder="PIN"
+                  value={inboxPasscode}
+                  onChange={(e) => setInboxPasscode(e.target.value.trim())}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    borderRadius: '10px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#fff',
+                    fontSize: '1.1rem',
+                    textAlign: 'center',
+                    letterSpacing: '0.1em',
+                    marginBottom: '20px',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                  autoFocus
+                />
+                {inboxError && (
+                  <p style={{ color: '#f87171', fontSize: '0.85rem', marginBottom: '16px' }}>{inboxError}</p>
+                )}
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button 
+                    type="button"
+                    className="btn btn-secondary" 
+                    onClick={() => setIsInboxModalOpen(false)}
+                    style={{ flex: 1, padding: '12px' }}
+                  >
+                    {getTranslation('formCancelBtn', lang)}
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={loadingMessages}
+                    className="btn btn-primary" 
+                    style={{ flex: 1, padding: '12px' }}
+                  >
+                    {loadingMessages ? (lang === 'kk' ? 'Тексерілуде...' : 'Проверка...') : (lang === 'kk' ? 'Кіру' : 'Войти')}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '6px', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Mail size={20} color="var(--primary)" />
+                  {getTranslation('msgModalTitle', lang)}
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
+                  {lang === 'kk' ? `Басылым ID: ${cat.id}` : `ID объявления: ${cat.id}`}
+                </p>
+
+                {/* Telegram Integration Link */}
+                <div style={{
+                  padding: '12px 16px',
+                  background: 'rgba(59, 130, 246, 0.08)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: '10px',
+                  marginBottom: '20px',
+                  fontSize: '0.85rem',
+                  lineHeight: '1.4'
+                }}>
+                  <div style={{ fontWeight: '600', color: '#60a5fa', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" style={{ color: '#3b82f6' }}>
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15.82-1.05 6.09-1.5 8.56-.19 1.04-.57 1.39-.94 1.42-.82.07-1.44-.55-2.24-1.07-1.25-.82-1.95-1.33-3.17-2.13-1.41-.93-.5-1.44.31-2.28.21-.22 3.89-3.57 3.96-3.87.01-.04.02-.17-.06-.24-.08-.07-.2-.05-.28-.03-.12.02-2.02 1.28-5.7 3.77-.54.37-1.03.55-1.47.54-.48-.01-1.4-.27-2.09-.5-.84-.28-1.51-.43-1.45-.91.03-.25.38-.51 1.05-.78 4.12-1.79 6.87-2.98 8.24-3.55 3.93-1.63 4.74-1.92 5.27-1.93.12 0 .38.03.55.17.14.12.18.28.2.46.02.16-.01.97-.03 1.94z"/>
+                    </svg>
+                    {getTranslation('msgConnectTelegram', lang)}
+                  </div>
+                  <p style={{ color: 'var(--text-secondary)', margin: '0 0 10px 0', fontSize: '0.8rem' }}>
+                    {lang === 'kk' 
+                      ? 'Хабарландыру үшін Telegram-да жедел хабарландыруларды алу үшін ботты қосыңыз.'
+                      : 'Подключите бота, чтобы получать мгновенные уведомления о новых сообщениях для этого объявления в Telegram.'}
+                  </p>
+                  <a 
+                    href={`https://t.me/KotoPoiskAlmatyBot?start=cat_${cat.id}_${verifiedInboxPasscode}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: '#2481cc',
+                      border: 'none',
+                      color: '#fff',
+                      padding: '6px 12px',
+                      fontSize: '0.8rem',
+                      fontWeight: '600',
+                      borderRadius: '6px',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    {lang === 'kk' ? 'Ботты іске қосу' : 'Запустить бота'}
+                  </a>
+                </div>
+
+                {/* Messages Timeline */}
+                <div style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  paddingRight: '6px',
+                  marginBottom: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }} className="custom-scrollbar">
+                  {loadingMessages ? (
+                    <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                      {lang === 'kk' ? 'Хабарламалар жүктелуде...' : 'Загрузка сообщений...'}
+                    </div>
+                  ) : inboxMessages.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                      {getTranslation('msgNoMessages', lang)}
+                    </div>
+                  ) : (
+                    inboxMessages.map((msg) => (
+                      <div 
+                        key={msg.id}
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.02)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          borderRadius: '12px',
+                          padding: '14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '6px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.8rem' }}>
+                          <strong style={{ color: 'var(--primary)' }}>{msg.sender_name}</strong>
+                          <span style={{ color: 'var(--text-muted)' }}>
+                            {msg.created_at ? new Date(msg.created_at).toLocaleString(lang === 'kk' ? 'kk-KZ' : 'ru-RU', {
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            }) : ''}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                          {msg.sender_contact}
+                        </div>
+                        <p style={{ margin: '6px 0 0 0', fontSize: '0.9rem', color: '#f1f5f9', lineHeight: '1.4', whiteSpace: 'pre-wrap' }}>
+                          {msg.message_text}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={() => setIsInboxModalOpen(false)}
+                    style={{ padding: '10px 24px' }}
+                  >
+                    {lang === 'kk' ? 'Жабу' : 'Закрыть'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
