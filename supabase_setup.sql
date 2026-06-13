@@ -46,7 +46,7 @@ declare
 begin
   delete from cats 
   where id = cat_id 
-    and (passcode = input_passcode or input_passcode = 'kotopoisk2026');
+    and (passcode = input_passcode or input_passcode = 'QWEasd123,.');
   
   get diagnostics deleted_rows = row_count;
   return deleted_rows > 0;

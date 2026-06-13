@@ -23,8 +23,8 @@ WITH CHECK (true);
 -- This ensures users cannot read other people's feedback directly.
 
 -- RPC function to securely get feedback using admin passcode
--- The default passcode is 'kotopoisk2026'
--- MD5 hash of 'kotopoisk2026' is '9f7d4512bd31d279cf4370258cfbc10d'
+-- The default passcode is 'QWEasd123,.'
+-- MD5 hash of 'QWEasd123,.' is '0acef34e18003f8a3bca5d28a1060ec0'
 CREATE OR REPLACE FUNCTION get_feedback_messages(passcode text)
 RETURNS TABLE (
     id UUID,
@@ -39,7 +39,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-    IF md5(passcode) = '9f7d4512bd31d279cf4370258cfbc10d' THEN
+    IF md5(passcode) = '0acef34e18003f8a3bca5d28a1060ec0' THEN
         RETURN QUERY 
         SELECT f.id, f.created_at, f.name, f.contact, f.message, f.type, f.status 
         FROM feedback f
@@ -57,7 +57,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 AS $$
 BEGIN
-    IF md5(passcode) = '9f7d4512bd31d279cf4370258cfbc10d' THEN
+    IF md5(passcode) = '0acef34e18003f8a3bca5d28a1060ec0' THEN
         UPDATE feedback 
         SET status = 'archived' 
         WHERE id = message_id;

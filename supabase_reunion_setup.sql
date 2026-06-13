@@ -26,7 +26,7 @@ BEGIN
             ELSE description 
         END
     WHERE id = cat_id 
-      AND (passcode = input_passcode OR input_passcode = 'kotopoisk2026');
+      AND (passcode = input_passcode OR input_passcode = 'QWEasd123,.');
 
     GET DIAGNOSTICS updated_rows = ROW_COUNT;
     RETURN updated_rows > 0;
