@@ -184,6 +184,7 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
   };
   
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const handlePhoneChange = (e) => {
     const value = e.target.value;
@@ -490,42 +491,87 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
 
               {/* Add photo slot (if less than 3) */}
               {photos.length < 3 && (
-                <div 
-                  onClick={() => !submitting && fileInputRef.current.click()}
-                  style={{
-                    height: '150px',
-                    border: '2px dashed rgba(255, 255, 255, 0.15)',
-                    borderRadius: '16px',
-                    cursor: submitting ? 'not-allowed' : 'pointer',
-                    background: 'rgba(255,255,255,0.02)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'var(--transition-smooth)'
-                  }}
-                  onMouseOver={(e) => !submitting && (e.currentTarget.style.borderColor = 'var(--primary)')}
-                  onMouseOut={(e) => !submitting && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)')}
-                >
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    onChange={handleFileChange} 
-                    accept="image/*" 
-                    multiple
-                    style={{ display: 'none' }} 
-                    disabled={submitting}
-                  />
-                  {uploading ? (
-                    <Loader size={24} className="animate-spin" color="var(--primary)" />
-                  ) : (
-                    <>
-                      <Upload size={20} color="var(--text-secondary)" />
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{getTranslation('formUploadBtn', lang)}</span>
-                    </>
-                  )}
-                </div>
+                <>
+                  {/* Select from Gallery */}
+                  <div 
+                    onClick={() => !submitting && fileInputRef.current.click()}
+                    style={{
+                      height: '150px',
+                      border: '2px dashed rgba(255, 255, 255, 0.15)',
+                      borderRadius: '16px',
+                      cursor: submitting ? 'not-allowed' : 'pointer',
+                      background: 'rgba(255,255,255,0.02)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'var(--transition-smooth)'
+                    }}
+                    onMouseOver={(e) => !submitting && (e.currentTarget.style.borderColor = 'var(--primary)')}
+                    onMouseOut={(e) => !submitting && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)')}
+                  >
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      onChange={handleFileChange} 
+                      accept="image/*" 
+                      multiple
+                      style={{ display: 'none' }} 
+                      disabled={submitting}
+                    />
+                    {uploading ? (
+                      <Loader size={24} className="animate-spin" color="var(--primary)" />
+                    ) : (
+                      <>
+                        <Upload size={20} color="var(--text-secondary)" />
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '0 8px' }}>
+                          {getTranslation('formUploadBtn', lang)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Capture from Camera */}
+                  <div 
+                    onClick={() => !submitting && cameraInputRef.current.click()}
+                    style={{
+                      height: '150px',
+                      border: '2px dashed rgba(255, 255, 255, 0.15)',
+                      borderRadius: '16px',
+                      cursor: submitting ? 'not-allowed' : 'pointer',
+                      background: 'rgba(255,255,255,0.02)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      transition: 'var(--transition-smooth)'
+                    }}
+                    onMouseOver={(e) => !submitting && (e.currentTarget.style.borderColor = 'var(--primary)')}
+                    onMouseOut={(e) => !submitting && (e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)')}
+                  >
+                    <input 
+                      type="file" 
+                      ref={cameraInputRef} 
+                      onChange={handleFileChange} 
+                      accept="image/*" 
+                      capture="environment"
+                      style={{ display: 'none' }} 
+                      disabled={submitting}
+                    />
+                    {uploading ? (
+                      <Loader size={24} className="animate-spin" color="var(--primary)" />
+                    ) : (
+                      <>
+                        <Camera size={20} color="var(--primary)" style={{ filter: 'drop-shadow(0 0 4px var(--primary))' }} />
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center', padding: '0 8px' }}>
+                          {getTranslation('formCaptureBtn', lang)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 

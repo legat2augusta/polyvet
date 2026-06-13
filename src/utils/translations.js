@@ -80,6 +80,7 @@ export const translations = {
     formUseCurrentLocation: "Определить текущее местоположение",
     formGeolocError: "Не удалось определить местоположение. Убедитесь, что GPS включен.",
     formGeolocPermission: "Пожалуйста, разрешите доступ к геопозиции в настройках браузера.",
+    formCaptureBtn: "Снять на камеру",
     
     // AI Scanner
     scanTitle: "ИНТЕЛЛЕКТУАЛЬНЫЙ ИИ-АНАЛИЗ",
@@ -400,6 +401,7 @@ export const translations = {
     formUseCurrentLocation: "Қазіргі орналасқан жерді анықтау",
     formGeolocError: "Орналасқан жерді анықтау мүмкін болмады. GPS қосулы екеніне көз жеткізіңіз.",
     formGeolocPermission: "Браузер параметрлерінде геопозицияға рұқсат беріңіз.",
+    formCaptureBtn: "Камерадан суретке түсіру",
     
     // AI Scanner
     scanTitle: "ИНТЕЛЛЕКТУАЛДЫ ИИ-ТАЛДАУ",
