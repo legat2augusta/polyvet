@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, X, Send, CheckCircle2, AlertCircle } from 'lucide-react';
-import { supabase } from '../supabaseClient';
+import { supabase, logEvent } from '../supabaseClient';
 import { getTranslation } from '../utils/translations';
 
 export default function FeedbackModal({ lang }) {
@@ -34,6 +34,7 @@ export default function FeedbackModal({ lang }) {
       if (insertError) throw insertError;
 
       setSuccess(true);
+      logEvent('feedback_submitted', 'feedback', { feedback_type: type });
       setName('');
       setContact('');
       setMessage('');

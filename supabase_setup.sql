@@ -42,13 +42,15 @@ revoke select (passcode) on cats from anon, authenticated;
 
 -- Безопасная функция удаления объявлений по коду (RPC)
 create or replace function delete_cat_with_passcode(cat_id bigint, input_passcode text)
-returns boolean security definer as $$
+returns boolean security definer 
+set search_path = public, pg_temp
+as $$
 declare
   deleted_rows int;
 begin
   delete from cats 
   where id = cat_id 
-    and (passcode = input_passcode or input_passcode = 'QWEasd123,.');
+    and (passcode = input_passcode or md5(input_passcode) = '0acef34e18003f8a3bca5d28a1060ec0');
   
   get diagnostics deleted_rows = row_count;
   return deleted_rows > 0;

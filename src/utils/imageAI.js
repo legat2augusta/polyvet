@@ -122,7 +122,7 @@ export const calculateVectorSimilarity = (vecA, vecB) => {
     dotProduct += vecA[i] * vecB[i];
   }
   
-  // Map similarity from [-1, 1] range to [0, 100] percentage
-  const mapped = Math.round(((dotProduct + 1) / 2) * 100);
+  // Map similarity from [0, 1] range to [0, 100] percentage
+  const mapped = Math.round(dotProduct * 100);
   return Math.max(0, Math.min(100, mapped));
 };

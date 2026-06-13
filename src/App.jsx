@@ -6,7 +6,7 @@ import AIScanner from './components/AIScanner';
 import FeedbackModal from './components/FeedbackModal';
 import AdminDashboard from './components/AdminDashboard';
 import ReunionsPage from './components/ReunionsPage';
-import { supabase } from './supabaseClient';
+import { supabase, logEvent } from './supabaseClient';
 import { AlertTriangle } from 'lucide-react';
 import { getTranslation } from './utils/translations';
 
@@ -139,6 +139,11 @@ export default function App() {
     localStorage.setItem('kotopoisk_lang', newLang);
   };
 
+  // Track page views
+  useEffect(() => {
+    logEvent('page_view', activeTab);
+  }, [activeTab]);
+
   // Fetch cats from Supabase on mount
   useEffect(() => {
     async function fetchCats() {
@@ -146,7 +151,7 @@ export default function App() {
         setLoading(true);
         const { data, error } = await supabase
           .from('cats')
-          .select('*')
+          .select('id, created_at, status, breed, color, district, date, description, contact_name, contact_phone, photo_url, photo_url_2, photo_url_3, tags, latitude, longitude')
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -177,7 +182,7 @@ export default function App() {
       const response = await supabase
         .from('cats')
         .insert([newCat])
-        .select();
+        .select('id, created_at, status, breed, color, district, date, description, contact_name, contact_phone, photo_url, photo_url_2, photo_url_3, tags, latitude, longitude');
       
       data = response.data;
       error = response.error;
@@ -191,7 +196,7 @@ export default function App() {
         const retryResponse = await supabase
           .from('cats')
           .insert([simplifiedCat])
-          .select();
+          .select('id, created_at, status, breed, color, district, date, description, contact_name, contact_phone, photo_url, photo_url_2, photo_url_3, tags, latitude, longitude');
           
         data = retryResponse.data;
         error = retryResponse.error;
@@ -203,6 +208,7 @@ export default function App() {
 
       const addedCat = data[0];
       setCats(prevCats => [addedCat, ...prevCats]);
+      logEvent('ad_created', 'report', { breed: addedCat.breed, status: addedCat.status, district: addedCat.district });
       
       // Save passcode in localStorage for auto-deletion
       if (addedCat && addedCat.id && addedCat.passcode) {
@@ -261,6 +267,7 @@ export default function App() {
       }
 
       setCats(prevCats => prevCats.filter(cat => cat.id !== id));
+      logEvent('ad_deleted', activeTab, { cat_id: id });
 
       try {
         const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
@@ -307,6 +314,7 @@ export default function App() {
         }
         return cat;
       }));
+      logEvent('ad_reunited', activeTab, { cat_id: id, has_story: !!storyText });
 
       try {
         const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
@@ -467,7 +475,7 @@ export default function App() {
               onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.4)'}
               onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255, 255, 255, 0.2)'}
             >
-              Панель управления
+              {getTranslation('adminTitle', lang)}
             </button>
           </div>
         </footer>

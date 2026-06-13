@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Cpu, ArrowLeft, RefreshCw, CheckCircle, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 import { calculateVectorSimilarity } from '../utils/imageAI';
 import { getTranslation } from '../utils/translations';
+import { logEvent } from '../supabaseClient';
 
 const COLOR_KEYS = {
   'Рыжий': 'colorGinger',
@@ -215,6 +216,13 @@ export default function AIScanner({ targetCat, cats, onClose, lang }) {
     const relevantMatches = scoredCandidates.filter(m => m.matchScore > 40);
     
     setMatches(relevantMatches);
+    logEvent('ai_scan', 'scan', {
+      target_id: targetCat.id,
+      breed: targetCat.breed,
+      status: targetCat.status,
+      match_count: relevantMatches.length,
+      highest_score: relevantMatches.length > 0 ? relevantMatches[0].matchScore : 0
+    });
   };
 
   const handleNextPhoto = () => {
@@ -230,11 +238,11 @@ export default function AIScanner({ targetCat, cats, onClose, lang }) {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
         <button className="btn btn-secondary" onClick={onClose}>
-          <ArrowLeft size={16} /> Назад к объявлениям
+          <ArrowLeft size={16} /> {getTranslation('scanBackBtn', lang)}
         </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--scan-accent)' }}>
           <Cpu size={20} className={isScanning ? "animate-spin" : ""} style={{ animationDuration: '3s' }} />
-          <span style={{ fontWeight: 600, letterSpacing: '0.05em' }}>ИНТЕЛЛЕКТУАЛЬНЫЙ ИИ-АНАЛИЗ</span>
+          <span style={{ fontWeight: 600, letterSpacing: '0.05em' }}>{getTranslation('scanTitle', lang)}</span>
         </div>
       </div>
 
@@ -246,7 +254,7 @@ export default function AIScanner({ targetCat, cats, onClose, lang }) {
       }}>
         {/* Target Cat details & Scanning screen */}
         <div className="glass-card" style={{ padding: '24px', borderRadius: '24px' }}>
-          <h3 style={{ marginBottom: '16px', fontSize: '1.3rem' }}>Объект сканирования</h3>
+          <h3 style={{ marginBottom: '16px', fontSize: '1.3rem' }}>{getTranslation('scanTargetTitle', lang)}</h3>
           
           <div className="scanner-container" style={{ width: '100%', height: '300px', background: '#0a0d18', position: 'relative' }}>
             <img 

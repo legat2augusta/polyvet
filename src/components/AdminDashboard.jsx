@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Trash2, ArrowLeft, Calendar, MessageSquare, User, Mail, Archive, BarChart3, Heart } from 'lucide-react';
+import { Lock, Trash2, ArrowLeft, Calendar, MessageSquare, User, Mail, Archive, BarChart3, Heart, Download, TrendingUp, Users, Activity, Eye, FileSpreadsheet, Sparkles, PlusCircle, Trash, CheckCircle } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { getTranslation } from '../utils/translations';
 
@@ -13,18 +13,23 @@ export default function AdminDashboard({ onBack, lang }) {
   const [filter, setFilter] = useState('new'); // 'all', 'new', 'archived'
 
   // Admin Listings States
-  const [activeSection, setActiveSection] = useState('feedback'); // 'feedback', 'listings'
+  const [activeSection, setActiveSection] = useState('feedback'); // 'feedback', 'listings', 'analytics'
   const [cats, setCats] = useState([]);
   const [catsLoading, setCatsLoading] = useState(false);
   const [catsFilter, setCatsFilter] = useState('all'); // 'all', 'lost', 'found', 'reunited'
   const [catsSearch, setCatsSearch] = useState('');
+
+  // Analytics States
+  const [analyticsData, setAnalyticsData] = useState([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState(null);
 
   const fetchCats = async () => {
     setCatsLoading(true);
     try {
       const { data, error: fetchError } = await supabase
         .from('cats')
-        .select('*')
+        .select('id, created_at, status, breed, color, district, date, description, contact_name, contact_phone, photo_url, photo_url_2, photo_url_3, tags, latitude, longitude')
         .order('created_at', { ascending: false });
       if (fetchError) throw fetchError;
       setCats(data || []);
@@ -32,6 +37,35 @@ export default function AdminDashboard({ onBack, lang }) {
       console.error('Failed to fetch cats for admin:', err);
     } finally {
       setCatsLoading(false);
+    }
+  };
+
+  const fetchAnalytics = async (code = verifiedPasscode) => {
+    if (!code) return;
+    setAnalyticsLoading(true);
+    setAnalyticsError(null);
+    try {
+      const { data, error: fetchErr } = await supabase.rpc('get_analytics_data', {
+        passcode: code
+      });
+      if (fetchErr) throw fetchErr;
+      setAnalyticsData(data || []);
+    } catch (err) {
+      console.error('Failed to fetch analytics:', err);
+      setAnalyticsError(err.message || 'Error fetching analytics data');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  const handleSectionChange = (section) => {
+    setActiveSection(section);
+    if (section === 'analytics') {
+      fetchAnalytics();
+    } else if (section === 'listings') {
+      fetchCats();
+    } else if (section === 'feedback') {
+      refreshMessages();
     }
   };
 
@@ -54,8 +88,9 @@ export default function AdminDashboard({ onBack, lang }) {
       setVerifiedPasscode(passcode.trim());
       setIsUnlocked(true);
       
-      // Load cats on successful unlock
+      // Load cats and analytics on successful unlock
       fetchCats();
+      fetchAnalytics(passcode.trim());
     } catch (err) {
       console.error('Admin unlock error:', err);
       setError(getTranslation('adminIncorrectPasscode', lang));
@@ -97,7 +132,7 @@ export default function AdminDashboard({ onBack, lang }) {
   };
 
   const handleDeleteCat = async (catId) => {
-    if (!window.confirm('Вы действительно хотите навсегда удалить это объявление?')) return;
+    if (!window.confirm(getTranslation('cardDeleteConfirm', lang))) return;
     try {
       const { data: success, error: deleteErr } = await supabase.rpc('delete_cat_with_passcode', {
         cat_id: catId,
@@ -106,18 +141,18 @@ export default function AdminDashboard({ onBack, lang }) {
       if (deleteErr) throw deleteErr;
       if (success) {
         setCats(prev => prev.filter(c => c.id !== catId));
-        alert('Объявление успешно удалено.');
+        alert(getTranslation('adminAdDeletedAlert', lang));
       } else {
-        alert('Не удалось удалить объявление. Неверный пароль.');
+        alert(getTranslation('adminAdDeleteErrorAlert', lang));
       }
     } catch (err) {
       console.error('Admin delete cat error:', err);
-      alert('Ошибка при удалении: ' + err.message);
+      alert((lang === 'kk' ? 'Өшіру кезіндегі қате: ' : 'Ошибка при удалении: ') + err.message);
     }
   };
 
   const handleMarkReunited = async (catId) => {
-    if (!window.confirm('Перенести это объявление в счастливые истории? Контакты будут скрыты.')) return;
+    if (!window.confirm(getTranslation('adminConfirmMarkReunited', lang))) return;
     try {
       const { data: success, error: reunitedErr } = await supabase.rpc('mark_cat_reunited_with_passcode', {
         cat_id: catId,
@@ -127,14 +162,132 @@ export default function AdminDashboard({ onBack, lang }) {
       if (reunitedErr) throw reunitedErr;
       if (success) {
         setCats(prev => prev.map(c => c.id === catId ? { ...c, status: 'reunited', contact_name: 'Аноним', contact_phone: '' } : c));
-        alert('Объявление перенесено в счастливые истории.');
+        alert(getTranslation('adminAdReunitedAlert', lang));
       } else {
-        alert('Не удалось изменить статус. Неверный пароль.');
+        alert(getTranslation('adminAdReunitedErrorAlert', lang));
       }
     } catch (err) {
       console.error('Admin mark reunited error:', err);
-      alert('Ошибка при обновлении: ' + err.message);
+      alert((lang === 'kk' ? 'Жаңарту кезіндегі қате: ' : 'Ошибка при обновлении: ') + err.message);
     }
+  };
+
+  const exportAnalyticsToCSV = () => {
+    if (analyticsData.length === 0) {
+      alert('Нет данных для выгрузки');
+      return;
+    }
+    const headers = ['Timestamp', 'Event Type', 'Page Path', 'Session ID', 'Metadata'];
+    const rows = analyticsData.map(e => [
+      new Date(e.created_at).toLocaleString('ru-RU'),
+      e.event_type,
+      e.page_path || '',
+      e.session_id || '',
+      JSON.stringify(e.metadata || {})
+    ]);
+    const csvContent = "\uFEFF" + [headers, ...rows]
+      .map(r => r.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `kotopoisk_analytics_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportListingsToCSV = () => {
+    if (cats.length === 0) {
+      alert('Нет объявлений для выгрузки');
+      return;
+    }
+    const headers = [
+      'ID', 'Дата создания', 'Статус', 'Порода', 'Окрас', 
+      'Район', 'Дата объявления', 'Широта', 'Долгота', 
+      'Имя контакта', 'Телефон', 'Описание'
+    ];
+    const rows = cats.map(c => [
+      c.id,
+      new Date(c.created_at || Date.now()).toLocaleString('ru-RU'),
+      c.status === 'lost' ? 'Пропал' : (c.status === 'found' ? 'Найден' : 'Дома (Воссоединен)'),
+      c.breed || 'Беспородная',
+      c.color,
+      c.district,
+      c.date,
+      c.latitude || '',
+      c.longitude || '',
+      c.status === 'reunited' ? 'Аноним' : (c.contact_name || ''),
+      c.status === 'reunited' ? '' : (c.contact_phone || ''),
+      c.description || ''
+    ]);
+    const csvContent = "\uFEFF" + [headers, ...rows]
+      .map(r => r.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `kotopoisk_listings_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Analytics calculations
+  const totalViews = analyticsData.filter(e => e.event_type === 'page_view').length;
+  const uniqueSessions = new Set(analyticsData.map(e => e.session_id).filter(Boolean)).size;
+  const totalActions = analyticsData.filter(e => e.event_type !== 'page_view').length;
+  
+  const countEvent = (type) => analyticsData.filter(e => e.event_type === type).length;
+  const scansCount = countEvent('ai_scan');
+  const createdCount = countEvent('ad_created');
+  const reunitedCount = countEvent('ad_reunited');
+  const feedbackSubCount = countEvent('feedback_submitted');
+  const deletedCount = countEvent('ad_deleted');
+
+  // Page views distribution
+  const pageViewsDist = {
+    'dashboard': 0,
+    'reunions': 0,
+    'report': 0,
+    'scan': 0,
+    'admin': 0
+  };
+  analyticsData.forEach(e => {
+    if (e.event_type === 'page_view' && e.page_path && pageViewsDist[e.page_path] !== undefined) {
+      pageViewsDist[e.page_path]++;
+    }
+  });
+
+  const maxPageView = Math.max(...Object.values(pageViewsDist), 1);
+  const maxEventCount = Math.max(scansCount, createdCount, reunitedCount, feedbackSubCount, deletedCount, 1);
+
+  const getPageLabel = (path) => {
+    const labels = {
+      'dashboard': 'Главная (Объявления)',
+      'reunions': 'Счастливые истории',
+      'report': 'Подать объявление',
+      'scan': 'ИИ Сканер',
+      'admin': 'Панель админа'
+    };
+    return labels[path] || path;
+  };
+
+  const formatMetadata = (meta) => {
+    if (!meta || Object.keys(meta).length === 0) return '-';
+    return Object.entries(meta).map(([k, v]) => `${k}: ${v}`).join(', ');
+  };
+
+  const formatSession = (sid) => {
+    if (!sid) return '-';
+    if (sid.startsWith('session_')) {
+      return sid.replace('session_', '').substring(0, 8);
+    }
+    return sid.substring(0, 8);
   };
 
   // Filter messages based on tab
@@ -201,7 +354,7 @@ export default function AdminDashboard({ onBack, lang }) {
             {getTranslation('adminTitle', lang)}
           </h2>
           <p style={{ color: '#9ca3af', fontSize: '14px', margin: '0 0 24px 0' }}>
-            Access restricted to system administrators
+            {getTranslation('adminAccessRestricted', lang)}
           </p>
 
           <form onSubmit={handleUnlock} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -275,7 +428,7 @@ export default function AdminDashboard({ onBack, lang }) {
             }}
           >
             <ArrowLeft size={16} />
-            <span>Назад</span>
+            <span>{getTranslation('adminBtnBack', lang)}</span>
           </button>
         </div>
       </div>
@@ -337,7 +490,7 @@ export default function AdminDashboard({ onBack, lang }) {
             gap: '2px'
           }}>
             <button
-              onClick={() => setActiveSection('feedback')}
+              onClick={() => handleSectionChange('feedback')}
               style={{
                 background: activeSection === 'feedback' ? 'var(--primary)' : 'none',
                 border: 'none',
@@ -350,10 +503,10 @@ export default function AdminDashboard({ onBack, lang }) {
                 transition: 'all 0.2s'
               }}
             >
-              Обратная связь
+              {getTranslation('adminTabFeedback', lang)}
             </button>
             <button
-              onClick={() => setActiveSection('listings')}
+              onClick={() => handleSectionChange('listings')}
               style={{
                 background: activeSection === 'listings' ? 'var(--primary)' : 'none',
                 border: 'none',
@@ -366,7 +519,23 @@ export default function AdminDashboard({ onBack, lang }) {
                 transition: 'all 0.2s'
               }}
             >
-              Объявления
+              {getTranslation('adminTabListings', lang)}
+            </button>
+            <button
+              onClick={() => handleSectionChange('analytics')}
+              style={{
+                background: activeSection === 'analytics' ? 'var(--primary)' : 'none',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                color: activeSection === 'analytics' ? '#ffffff' : '#9ca3af',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+            >
+              {getTranslation('adminTabAnalytics', lang)}
             </button>
           </div>
         </div>
@@ -377,6 +546,7 @@ export default function AdminDashboard({ onBack, lang }) {
             setPasscode('');
             setVerifiedPasscode('');
             setMessages([]);
+            setAnalyticsData([]);
           }}
           style={{
             background: 'none',
@@ -388,7 +558,7 @@ export default function AdminDashboard({ onBack, lang }) {
             cursor: 'pointer'
           }}
         >
-          Выйти
+          {getTranslation('adminLogoutBtn', lang)}
         </button>
       </header>
 
@@ -706,7 +876,7 @@ export default function AdminDashboard({ onBack, lang }) {
                 cursor: 'pointer'
               }}
             >
-              Все ({cats.length})
+              {getTranslation('adminFilterAll', lang)} ({cats.length})
             </button>
             <button
               onClick={() => setCatsFilter('lost')}
@@ -721,7 +891,7 @@ export default function AdminDashboard({ onBack, lang }) {
                 cursor: 'pointer'
               }}
             >
-              Потеряны ({cats.filter(c => c.status === 'lost').length})
+              {getTranslation('adminFilterLost', lang)} ({cats.filter(c => c.status === 'lost').length})
             </button>
             <button
               onClick={() => setCatsFilter('found')}
@@ -736,7 +906,7 @@ export default function AdminDashboard({ onBack, lang }) {
                 cursor: 'pointer'
               }}
             >
-              Найдены ({cats.filter(c => c.status === 'found').length})
+              {getTranslation('adminFilterFound', lang)} ({cats.filter(c => c.status === 'found').length})
             </button>
             <button
               onClick={() => setCatsFilter('reunited')}
@@ -751,7 +921,7 @@ export default function AdminDashboard({ onBack, lang }) {
                 cursor: 'pointer'
               }}
             >
-              Дома ({cats.filter(c => c.status === 'reunited').length})
+              {getTranslation('adminFilterReunited', lang)} ({cats.filter(c => c.status === 'reunited').length})
             </button>
           </div>
 
@@ -759,7 +929,7 @@ export default function AdminDashboard({ onBack, lang }) {
           <div style={{ display: 'flex', gap: '8px', flexGrow: 1, maxWidth: '400px' }}>
             <input 
               type="text"
-              placeholder="Поиск по породе, описанию, району..."
+              placeholder={getTranslation('adminSearchPlaceholder', lang)}
               value={catsSearch}
               onChange={(e) => setCatsSearch(e.target.value)}
               style={{
@@ -787,14 +957,14 @@ export default function AdminDashboard({ onBack, lang }) {
                 whiteSpace: 'nowrap'
               }}
             >
-              {catsLoading ? '...' : 'Обновить'}
+              {catsLoading ? '...' : getTranslation('adminFilterRefresh', lang)}
             </button>
           </div>
         </div>
 
         {/* Grid of Listings table */}
         {catsLoading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Загрузка объявлений...</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>{getTranslation('adminLoadingListings', lang)}</div>
         ) : filteredCatsList.length === 0 ? (
           <div style={{
             background: '#0c0f1d',
@@ -804,19 +974,19 @@ export default function AdminDashboard({ onBack, lang }) {
             textAlign: 'center',
             color: '#9ca3af'
           }}>
-            <p style={{ margin: 0 }}>Объявлений не найдено.</p>
+            <p style={{ margin: 0 }}>{getTranslation('adminNoListings', lang)}</p>
           </div>
         ) : (
           <div style={{ overflowX: 'auto', background: '#0c0f1d', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#9ca3af' }}>
-                  <th style={{ padding: '16px' }}>Фото</th>
-                  <th style={{ padding: '16px' }}>Порода / Окрас</th>
-                  <th style={{ padding: '16px' }}>Статус</th>
-                  <th style={{ padding: '16px' }}>Район / Дата</th>
-                  <th style={{ padding: '16px' }}>Контакты</th>
-                  <th style={{ padding: '16px', textAlign: 'right' }}>Действия</th>
+                  <th style={{ padding: '16px' }}>{getTranslation('adminTablePhoto', lang)}</th>
+                  <th style={{ padding: '16px' }}>{getTranslation('adminTableBreedColor', lang)}</th>
+                  <th style={{ padding: '16px' }}>{getTranslation('adminTableStatus', lang)}</th>
+                  <th style={{ padding: '16px' }}>{getTranslation('adminTableDistrictDate', lang)}</th>
+                  <th style={{ padding: '16px' }}>{getTranslation('adminTableContacts', lang)}</th>
+                  <th style={{ padding: '16px', textAlign: 'right' }}>{getTranslation('adminTableActions', lang)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -830,13 +1000,13 @@ export default function AdminDashboard({ onBack, lang }) {
                       />
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontWeight: '600', color: '#fff' }}>{cat.breed || 'Беспородная'}</div>
+                      <div style={{ fontWeight: '600', color: '#fff' }}>{cat.breed || getTranslation('cardBreedDefault', lang)}</div>
                       <div style={{ color: '#9ca3af', fontSize: '11px' }}>{cat.color}</div>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
-                      {cat.status === 'lost' && <span style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>Пропал</span>}
-                      {cat.status === 'found' && <span style={{ color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>Найден</span>}
-                      {cat.status === 'reunited' && <span style={{ color: '#f97316', background: 'rgba(249,115,22,0.1)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>Дома 🧡</span>}
+                      {cat.status === 'lost' && <span style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>{getTranslation('statusLost', lang)}</span>}
+                      {cat.status === 'found' && <span style={{ color: '#10b981', background: 'rgba(16,185,129,0.1)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>{getTranslation('statusFound', lang)}</span>}
+                      {cat.status === 'reunited' && <span style={{ color: '#f97316', background: 'rgba(249,115,22,0.1)', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '600' }}>{getTranslation('statusReunited', lang)}</span>}
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <div style={{ color: '#fff' }}>{cat.district}</div>
@@ -844,7 +1014,7 @@ export default function AdminDashboard({ onBack, lang }) {
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       {cat.status === 'reunited' ? (
-                        <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>Скрыты (Дома)</span>
+                        <span style={{ color: '#9ca3af', fontStyle: 'italic' }}>{getTranslation('adminTableHiddenReunited', lang)}</span>
                       ) : (
                         <>
                           <div style={{ color: '#fff', fontWeight: '500' }}>{cat.contact_name}</div>
@@ -857,7 +1027,7 @@ export default function AdminDashboard({ onBack, lang }) {
                         {cat.status !== 'reunited' && (
                           <button
                             onClick={() => handleMarkReunited(cat.id)}
-                            title="Перенести в счастливые истории"
+                            title={getTranslation('adminTooltipReunited', lang)}
                             style={{
                               background: 'rgba(249,115,22,0.1)',
                               border: 'none',
@@ -876,7 +1046,7 @@ export default function AdminDashboard({ onBack, lang }) {
                         )}
                         <button
                           onClick={() => handleDeleteCat(cat.id)}
-                          title="Удалить навсегда"
+                          title={getTranslation('adminTooltipDelete', lang)}
                           style={{
                             background: 'rgba(239, 68, 68, 0.1)',
                             border: 'none',
@@ -908,6 +1078,309 @@ export default function AdminDashboard({ onBack, lang }) {
             background: rgba(255, 255, 255, 0.02) !important;
           }
         `}</style>
+      </div>
+    )}
+
+    {activeSection === 'analytics' && (
+      <div>
+        {analyticsLoading ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>Загрузка аналитики...</div>
+        ) : analyticsError ? (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            borderRadius: '16px',
+            padding: '20px',
+            color: '#f87171',
+            textAlign: 'center'
+          }}>
+            <p style={{ margin: '0 0 12px 0' }}>Не удалось загрузить данные аналитики.</p>
+            <p style={{ fontSize: '12px', margin: 0 }}>{analyticsError}</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* Analytics KPI cards */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '16px'
+            }}>
+              {/* Views */}
+              <div style={{ background: '#0c0f1d', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', padding: '12px', borderRadius: '12px' }}>
+                  <Eye size={24} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '13px', color: '#9ca3af', display: 'block' }}>{getTranslation('adminAnalyticsViews', lang)}</span>
+                  <strong style={{ fontSize: '24px', fontWeight: '700' }}>{totalViews}</strong>
+                </div>
+              </div>
+
+              {/* Visitors */}
+              <div style={{ background: '#0c0f1d', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', padding: '12px', borderRadius: '12px' }}>
+                  <Users size={24} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '13px', color: '#9ca3af', display: 'block' }}>{getTranslation('adminAnalyticsVisitors', lang)}</span>
+                  <strong style={{ fontSize: '24px', fontWeight: '700' }}>{uniqueSessions}</strong>
+                </div>
+              </div>
+
+              {/* AI searches */}
+              <div style={{ background: '#0c0f1d', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ background: 'rgba(249, 115, 22, 0.1)', color: '#f97316', padding: '12px', borderRadius: '12px' }}>
+                  <Sparkles size={24} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '13px', color: '#9ca3af', display: 'block' }}>{getTranslation('adminAnalyticsScans', lang)}</span>
+                  <strong style={{ fontSize: '24px', fontWeight: '700' }}>{scansCount}</strong>
+                </div>
+              </div>
+
+              {/* Reunions */}
+              <div style={{ background: '#0c0f1d', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '16px', padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ background: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', padding: '12px', borderRadius: '12px' }}>
+                  <Heart size={24} />
+                </div>
+                <div>
+                  <span style={{ fontSize: '13px', color: '#9ca3af', display: 'block' }}>{getTranslation('adminAnalyticsReunited', lang)}</span>
+                  <strong style={{ fontSize: '24px', fontWeight: '700' }}>{reunitedCount}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Export options block */}
+            <div style={{
+              background: 'linear-gradient(135deg, #0c0f1d 0%, #080a14 100%)',
+              border: '1px solid rgba(249, 115, 22, 0.15)',
+              borderRadius: '20px',
+              padding: '24px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '16px'
+            }}>
+              <div>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '700', color: '#ffffff' }}>
+                  {getTranslation('adminAnalyticsCSVExport', lang)}
+                </h3>
+                <p style={{ margin: 0, fontSize: '13px', color: '#9ca3af' }}>
+                  Выгрузка полной сырой информации о визитах и объявлениях в формате CSV для Excel/Google Таблиц
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={exportAnalyticsToCSV}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    padding: '10px 20px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)'}
+                >
+                  <FileSpreadsheet size={16} />
+                  <span>{getTranslation('adminExportAnalyticsBtn', lang)}</span>
+                </button>
+
+                <button
+                  onClick={exportListingsToCSV}
+                  style={{
+                    background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '12px',
+                    padding: '10px 20px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 15px rgba(249, 115, 22, 0.25)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                  onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                >
+                  <Download size={16} />
+                  <span>{getTranslation('adminExportListingsBtn', lang)}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Custom Visual Charts */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '24px'
+            }}>
+              {/* Page Views Chart */}
+              <div style={{ background: '#0c0f1d', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '15px', fontWeight: '700', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Eye size={18} style={{ color: '#3b82f6' }} />
+                  <span>Популярность разделов (Просмотры)</span>
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  {Object.entries(pageViewsDist).map(([path, count]) => (
+                    <div key={path} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#e5e7eb', fontWeight: '500' }}>{getPageLabel(path)}</span>
+                        <span style={{ color: '#9ca3af' }}>{count} {lang === 'ru' ? 'просмотров' : 'қарау'} ({totalViews > 0 ? Math.round((count / totalViews) * 100) : 0}%)</span>
+                      </div>
+                      <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${totalViews > 0 ? (count / maxPageView) * 100 : 0}%`,
+                          height: '100%',
+                          background: 'linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%)',
+                          borderRadius: '5px',
+                          transition: 'width 1s ease-out'
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Event Distribution Chart */}
+              <div style={{ background: '#0c0f1d', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '24px' }}>
+                <h3 style={{ margin: '0 0 20px 0', fontSize: '15px', fontWeight: '700', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Activity size={18} style={{ color: '#a855f7' }} />
+                  <span>Распределение активностей (Действия)</span>
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  {[
+                    { type: 'ai_scan', label: 'ИИ Сканирования', count: scansCount, color: 'linear-gradient(90deg, #f97316 0%, #fb923c 100%)' },
+                    { type: 'ad_created', label: 'Подано объявлений', count: createdCount, color: 'linear-gradient(90deg, #10b981 0%, #34d399 100%)' },
+                    { type: 'ad_reunited', label: 'Воссоединений (Дома)', count: reunitedCount, color: 'linear-gradient(90deg, #ec4899 0%, #f472b6 100%)' },
+                    { type: 'feedback_submitted', label: 'Отправлено отзывов', count: feedbackSubCount, color: 'linear-gradient(90deg, #a855f7 0%, #c084fc 100%)' },
+                    { type: 'ad_deleted', label: 'Удалено объявлений', count: deletedCount, color: 'linear-gradient(90deg, #ef4444 0%, #f87171 100%)' }
+                  ].map(({ type, label, count, color }) => (
+                    <div key={type} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+                        <span style={{ color: '#e5e7eb', fontWeight: '500' }}>{label}</span>
+                        <span style={{ color: '#9ca3af' }}>{count} ({totalActions > 0 ? Math.round((count / totalActions) * 100) : 0}%)</span>
+                      </div>
+                      <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '5px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${totalActions > 0 ? (count / maxEventCount) * 100 : 0}%`,
+                          height: '100%',
+                          background: color,
+                          borderRadius: '5px',
+                          transition: 'width 1s ease-out'
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Events List */}
+            <div style={{ background: '#0c0f1d', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '20px', padding: '24px' }}>
+              <h3 style={{ margin: '0 0 20px 0', fontSize: '15px', fontWeight: '700', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <TrendingUp size={18} style={{ color: '#10b981' }} />
+                <span>{getTranslation('adminAnalyticsRecentEvents', lang)}</span>
+              </h3>
+
+              {analyticsData.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#9ca3af' }}>
+                  {getTranslation('adminAnalyticsNoEvents', lang)}
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.08)', color: '#9ca3af' }}>
+                        <th style={{ padding: '12px' }}>{getTranslation('adminAnalyticsEventColTime', lang)}</th>
+                        <th style={{ padding: '12px' }}>{getTranslation('adminAnalyticsEventColType', lang)}</th>
+                        <th style={{ padding: '12px' }}>{getTranslation('adminAnalyticsEventColPage', lang)}</th>
+                        <th style={{ padding: '12px' }}>{getTranslation('adminAnalyticsEventColSession', lang)}</th>
+                        <th style={{ padding: '12px' }}>{getTranslation('adminAnalyticsEventColMeta', lang)}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {analyticsData.slice(0, 25).map(e => {
+                        let typeColor = '#9ca3af';
+                        let typeBg = 'rgba(255, 255, 255, 0.03)';
+                        let typeText = e.event_type;
+
+                        if (e.event_type === 'page_view') {
+                          typeColor = '#3b82f6';
+                          typeBg = 'rgba(59, 130, 246, 0.08)';
+                          typeText = 'Просмотр';
+                        } else if (e.event_type === 'ai_scan') {
+                          typeColor = '#f97316';
+                          typeBg = 'rgba(249, 115, 22, 0.08)';
+                          typeText = 'ИИ Поиск';
+                        } else if (e.event_type === 'ad_created') {
+                          typeColor = '#10b981';
+                          typeBg = 'rgba(16, 185, 129, 0.08)';
+                          typeText = 'Создано';
+                        } else if (e.event_type === 'ad_reunited') {
+                          typeColor = '#ec4899';
+                          typeBg = 'rgba(236, 72, 153, 0.08)';
+                          typeText = 'Дома 🧡';
+                        } else if (e.event_type === 'feedback_submitted') {
+                          typeColor = '#a855f7';
+                          typeBg = 'rgba(168, 85, 247, 0.08)';
+                          typeText = 'Отзыв';
+                        } else if (e.event_type === 'ad_deleted') {
+                          typeColor = '#ef4444';
+                          typeBg = 'rgba(239, 68, 68, 0.08)';
+                          typeText = 'Удалено';
+                        }
+
+                        return (
+                          <tr key={e.id} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.03)' }} className="admin-table-row">
+                            <td style={{ padding: '12px', whiteSpace: 'nowrap', color: '#9ca3af' }}>
+                              {new Date(e.created_at).toLocaleString('ru-RU')}
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{
+                                background: typeBg,
+                                color: typeColor,
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: '700'
+                              }}>
+                                {typeText}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px', color: '#ffffff' }}>
+                              {getPageLabel(e.page_path)}
+                            </td>
+                            <td style={{ padding: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>
+                              {formatSession(e.session_id)}
+                            </td>
+                            <td style={{ padding: '12px', color: '#9ca3af', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={formatMetadata(e.metadata)}>
+                              {formatMetadata(e.metadata)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
       </div>
     )}
   </div>

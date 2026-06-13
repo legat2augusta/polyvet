@@ -38,6 +38,7 @@ RETURNS TABLE (
 )
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF md5(passcode) = '0acef34e18003f8a3bca5d28a1060ec0' THEN
@@ -56,6 +57,7 @@ CREATE OR REPLACE FUNCTION archive_feedback_message(message_id UUID, passcode te
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 BEGIN
     IF md5(passcode) = '0acef34e18003f8a3bca5d28a1060ec0' THEN
