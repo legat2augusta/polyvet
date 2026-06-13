@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, ArrowLeft, Upload, Sparkles, Check, MapPin, Loader, X } from 'lucide-react';
 import CatsMap from './CatsMap';
 import { supabase } from '../supabaseClient';
@@ -100,6 +100,71 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
   
   // Default coordinates for Almaty (center)
   const [position, setPosition] = useState([43.2389, 76.8897]);
+
+  const autoDetectDistrict = async (lat, lng) => {
+    // 1. Local Voronoi Fallback (approximate centroids of the 8 Almaty districts)
+    const centroids = {
+      'Бостандыкский': [43.2045, 76.8872],
+      'Медеуский': [43.2389, 76.9634],
+      'Алмалинский': [43.2500, 76.9180],
+      'Ауэзовский': [43.2260, 76.8450],
+      'Алатауский': [43.2900, 76.8150],
+      'Жетысуский': [43.2920, 76.9280],
+      'Турксибский': [43.3320, 76.9600],
+      'Наурызбайский': [43.1900, 76.8050]
+    };
+
+    const getFallbackDistrict = (latVal, lngVal) => {
+      let minDistance = Infinity;
+      let closest = 'Бостандыкский';
+      for (const [name, center] of Object.entries(centroids)) {
+        const d = Math.sqrt(Math.pow(latVal - center[0], 2) + Math.pow(lngVal - center[1], 2));
+        if (d < minDistance) {
+          minDistance = d;
+          closest = name;
+        }
+      }
+      return closest;
+    };
+
+    // 2. Query Nominatim API with 2-second timeout
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+      const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ru`;
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'KotoPoiskAlmaty/1.0 (contact@kotopoisk.kz)'
+        }
+      });
+      clearTimeout(timeoutId);
+      const data = await res.json();
+      
+      const cityDistrict = data.address?.city_district || '';
+      
+      // Match the city_district string with our Almaty districts list
+      const districtsList = Object.keys(centroids);
+      const matched = districtsList.find(d => cityDistrict.toLowerCase().includes(d.toLowerCase()));
+      
+      if (matched) {
+        setDistrict(matched);
+      } else {
+        // Fallback if Nominatim did not return an Almaty district
+        setDistrict(getFallbackDistrict(lat, lng));
+      }
+    } catch (err) {
+      console.warn('Nominatim reverse geocoding failed or timed out. Using fallback proximity matching:', err);
+      setDistrict(getFallbackDistrict(lat, lng));
+    }
+  };
+
+  useEffect(() => {
+    if (position && position[0] && position[1]) {
+      autoDetectDistrict(position[0], position[1]);
+    }
+  }, [position]);
 
   const handleToggleTag = (tagId) => {
     let newTags = [...selectedTags];
