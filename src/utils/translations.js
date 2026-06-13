@@ -49,7 +49,7 @@ export const translations = {
     formStatusLabel: "Каков статус питомца?",
     formStatusLostBtn: "Я потерял кошку",
     formStatusFoundBtn: "Я нашел чужую кошку",
-    formPhotosLabel: "Фотографии кошки (максимум 3 ракурса)",
+    formPhotosLabel: "Фотографии кошки (максимум 3 фото)",
     formPhotosLimit: "Вы можете добавить еще максимум {slots} фото.",
     formPhotosLimitMax: "Максимально можно загрузить до 3-х фотографий.",
     formPhotosDup: "Это фото уже добавлено.",
@@ -149,7 +149,22 @@ export const translations = {
     labelAuthor: "Автор:",
     mapPopupCompare: "Сверить в ИИ",
     addLocalWarning: "Объявление добавлено локально в сессию, так как база данных Supabase еще не настроена.",
-    addErrorGeneral: "Ошибка при сохранении в базу данных. Сохранено локально: "
+    addErrorGeneral: "Ошибка при сохранении в базу данных. Сохранено локально: ",
+    // Tags
+    formTagsTitle: "Теги признаков кошки (в помощь ИИ)",
+    tagKitten: "Котенок",
+    tagAdult: "Взрослый(ая)",
+    tagSenior: "Пожилой(ая)",
+    tagCollar: "В ошейнике",
+    tagInjured: "Травмирован(а)",
+    tagScared: "Пугливый(ая)",
+    tagFriendly: "Ласковый(ая)",
+    tagHome: "Домашний(ая)",
+    tagOddEyes: "Разноглазый(ая)",
+    tagNeutered: "Стерилизован(а)",
+    tagLongHair: "Длинношерстный(ая)",
+    tagShortHair: "Короткошерстный(ая)",
+    labelCommonTags: "Общие признаки:"
   },
   kk: {
     // Header & Footer
@@ -201,7 +216,7 @@ export const translations = {
     formStatusLabel: "Үй жануарының статусы қандай?",
     formStatusLostBtn: "Мысығымды жоғалттым",
     formStatusFoundBtn: "Бөтен мысықты таптым",
-    formPhotosLabel: "Мысықтың суреттері (максимум 3 ракурс)",
+    formPhotosLabel: "Мысықтың суреттері (максимум 3 фото)",
     formPhotosLimit: "Сіз тағы максимум {slots} сурет қоса аласыз.",
     formPhotosLimitMax: "Максимум 3 фотосурет жүктеуге болады.",
     formPhotosDup: "Бұл сурет қосылып қойған.",
@@ -301,7 +316,22 @@ export const translations = {
     labelAuthor: "Автор:",
     mapPopupCompare: "ИИ-мен салыстыру",
     addLocalWarning: "Хабарландыру сессияға жергілікті түрде қосылды, өйткені Supabase дерекқоры әлі конфигурацияланбаған.",
-    addErrorGeneral: "Дерекқорға сақтау кезіндегі қате. Жергілікті түрде сақталды: "
+    addErrorGeneral: "Дерекқорға сақтау кезіндегі қате. Жергілікті түрде сақталды: ",
+    // Tags
+    formTagsTitle: "Мысық белгілерінің тегтері (ИИ-ге көмек)",
+    tagKitten: "Марғау (Котенок)",
+    tagAdult: "Ересек (Взрослый)",
+    tagSenior: "Қарт (Пожилой)",
+    tagCollar: "Қарғыбауы бар (В ошейнике)",
+    tagInjured: "Жарақат алған (Травма)",
+    tagScared: "Үркек (Пугливый)",
+    tagFriendly: "Ерке (Ласковый)",
+    tagHome: "Қолға үйретілген (Домашний)",
+    tagOddEyes: "Түрлі-түсті көзді (Разноглазый)",
+    tagNeutered: "Стерилденген",
+    tagLongHair: "Ұзын жүнді",
+    tagShortHair: "Қысқа жүнді",
+    labelCommonTags: "Ортақ белгілер:"
   }
 };
 

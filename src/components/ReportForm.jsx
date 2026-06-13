@@ -61,6 +61,21 @@ const DEMO_KEYS = {
   'Сиамский': 'formDemoNameSiamese'
 };
 
+const AVAILABLE_TAGS = [
+  { id: 'kitten', key: 'tagKitten' },
+  { id: 'adult', key: 'tagAdult' },
+  { id: 'senior', key: 'tagSenior' },
+  { id: 'collar', key: 'tagCollar' },
+  { id: 'injured', key: 'tagInjured' },
+  { id: 'scared', key: 'tagScared' },
+  { id: 'friendly', key: 'tagFriendly' },
+  { id: 'home', key: 'tagHome' },
+  { id: 'oddeyes', key: 'tagOddEyes' },
+  { id: 'neutered', key: 'tagNeutered' },
+  { id: 'longhair', key: 'tagLongHair' },
+  { id: 'shorthair', key: 'tagShortHair' }
+];
+
 export default function ReportForm({ onSubmit, onCancel, lang }) {
   const [status, setStatus] = useState('lost');
   const [breed, setBreed] = useState('');
@@ -71,13 +86,33 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
   const [contactName, setContactName] = useState('');
   const [contactPhone, setContactPhone] = useState('');
   
-  // Array to store up to 3 photos
-  const [photos, setPhotos] = useState([DEMO_PHOTOS[0].url]);
+  // Array to store up to 3 photos (starts empty now)
+  const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedTags, setSelectedTags] = useState([]);
   
   // Default coordinates for Almaty (center)
   const [position, setPosition] = useState([43.2389, 76.8897]);
+
+  const handleToggleTag = (tagId) => {
+    let newTags = [...selectedTags];
+    if (newTags.includes(tagId)) {
+      newTags = newTags.filter(t => t !== tagId);
+    } else {
+      // Mutual exclusion for age tags
+      if (tagId === 'kitten') newTags = newTags.filter(t => t !== 'adult' && t !== 'senior');
+      if (tagId === 'adult') newTags = newTags.filter(t => t !== 'kitten' && t !== 'senior');
+      if (tagId === 'senior') newTags = newTags.filter(t => t !== 'kitten' && t !== 'adult');
+      
+      // Mutual exclusion for hair length
+      if (tagId === 'longhair') newTags = newTags.filter(t => t !== 'shorthair');
+      if (tagId === 'shorthair') newTags = newTags.filter(t => t !== 'longhair');
+      
+      newTags.push(tagId);
+    }
+    setSelectedTags(newTags);
+  };
   
   const fileInputRef = useRef(null);
 
@@ -241,6 +276,7 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
         photo_url: uploadedUrls[0] || '',
         photo_url_2: uploadedUrls[1] || null,
         photo_url_3: uploadedUrls[2] || null,
+        tags: selectedTags,
         latitude: position[0],
         longitude: position[1],
         embedding: embeddingVector, // Save the real vector in PostgreSQL!
@@ -425,37 +461,37 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
               )}
             </div>
 
-            {/* Demo Photos Quick Select */}
-            <div>
-              <span className="input-label" style={{ fontSize: '0.8rem', marginBottom: '8px', display: 'block' }}>
-                {getTranslation('formDemoTitle', lang)}
+            {/* Tags Selection Block */}
+            <div style={{ marginTop: '16px' }}>
+              <span className="input-label" style={{ fontSize: '0.9rem', marginBottom: '10px', display: 'block' }}>
+                {getTranslation('formTagsTitle', lang)}
               </span>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                {DEMO_PHOTOS.map((demo) => {
-                  const isSelected = photos.includes(demo.url);
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {AVAILABLE_TAGS.map((tag) => {
+                  const isSelected = selectedTags.includes(tag.id);
                   return (
                     <button
-                      key={demo.name}
+                      key={tag.id}
                       type="button"
-                      disabled={submitting || isSelected || photos.length >= 3}
-                      onClick={() => handleSelectDemo(demo.url)}
+                      disabled={submitting}
+                      onClick={() => handleToggleTag(tag.id)}
                       style={{
-                        padding: '6px 12px',
-                        borderRadius: '8px',
+                        padding: '8px 16px',
+                        borderRadius: '12px',
                         background: isSelected ? 'var(--primary-light)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
+                        border: `1px solid ${isSelected ? 'var(--primary)' : 'rgba(255,255,255,0.08)'}`,
                         color: isSelected ? '#fff' : 'var(--text-secondary)',
-                        fontSize: '0.8rem',
-                        cursor: (submitting || isSelected || photos.length >= 3) ? 'not-allowed' : 'pointer',
+                        fontSize: '0.85rem',
+                        fontWeight: isSelected ? '600' : 'normal',
+                        cursor: submitting ? 'not-allowed' : 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        transition: 'var(--transition-smooth)',
-                        opacity: (isSelected || photos.length >= 3) ? 0.5 : 1
+                        gap: '6px',
+                        transition: 'var(--transition-smooth)'
                       }}
                     >
-                      {isSelected && <Check size={12} color="var(--primary)" />}
-                      {getTranslation(DEMO_KEYS[demo.name], lang)}
+                      {isSelected && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--primary)', boxShadow: '0 0 6px var(--primary)' }}></span>}
+                      {getTranslation(tag.key, lang)}
                     </button>
                   );
                 })}

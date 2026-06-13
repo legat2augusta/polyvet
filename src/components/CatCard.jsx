@@ -22,6 +22,21 @@ const DISTRICT_KEYS = {
   'Наурызбайский': 'districtNauryzbai'
 };
 
+const TAG_KEYS = {
+  kitten: 'tagKitten',
+  adult: 'tagAdult',
+  senior: 'tagSenior',
+  collar: 'tagCollar',
+  injured: 'tagInjured',
+  scared: 'tagScared',
+  friendly: 'tagFriendly',
+  home: 'tagHome',
+  oddeyes: 'tagOddEyes',
+  neutered: 'tagNeutered',
+  longhair: 'tagLongHair',
+  shorthair: 'tagShortHair'
+};
+
 export default function CatCard({ cat, onScan, onDelete, lang }) {
   const isLost = cat.status === 'lost';
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
@@ -319,6 +334,38 @@ export default function CatCard({ cat, onScan, onDelete, lang }) {
             </button>
           )}
         </div>
+
+        {/* Selected tags list */}
+        {cat.tags && cat.tags.length > 0 && (
+          <div style={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            gap: '6px', 
+            marginBottom: '16px' 
+          }}>
+            {cat.tags.map((tagId) => {
+              const tagKey = TAG_KEYS[tagId];
+              if (!tagKey) return null;
+              return (
+                <span 
+                  key={tagId}
+                  style={{
+                    fontSize: '0.7rem',
+                    padding: '3px 8px',
+                    borderRadius: '8px',
+                    background: 'rgba(249, 115, 22, 0.04)',
+                    border: '1px solid rgba(249, 115, 22, 0.15)',
+                    color: '#ffedd5',
+                    display: 'inline-block',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  {getTranslation(tagKey, lang)}
+                </span>
+              );
+            })}
+          </div>
+        )}
 
         {/* Location & Date */}
         <div style={{

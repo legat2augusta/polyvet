@@ -14,6 +14,9 @@ create table if not exists cats (
   contact_name text not null,
   contact_phone text not null,
   photo_url text not null,
+  photo_url_2 text,
+  photo_url_3 text,
+  tags text[] default '{}',
   latitude double precision not null default 43.2389,
   longitude double precision not null default 76.8897,
   embedding vector(384), -- 384-мерный вектор для ИИ-поиска по тексту/изображениям
@@ -57,3 +60,12 @@ $$ language plpgsql;
 -- 3. Назовите его "cat-photos".
 -- 4. Переключите тумблер в положение "Public bucket" (Публичный доступ).
 -- 5. Нажмите Save.
+
+-- =========================================================================
+-- ОБНОВЛЕНИЕ БАЗЫ ДАННЫХ (МИГРАЦИЯ ДЛЯ ВЕРСИЙ 1.1 и 1.8)
+-- Запустите эти команды в SQL Editor панели Supabase, если вы обновляете существующую таблицу:
+--
+-- alter table cats add column if not exists photo_url_2 text;
+-- alter table cats add column if not exists photo_url_3 text;
+-- alter table cats add column if not exists tags text[] default '{}';
+-- =========================================================================

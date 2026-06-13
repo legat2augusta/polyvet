@@ -173,10 +173,29 @@ export default function App() {
 
   const handleAddCat = async (newCat) => {
     try {
-      const { data, error } = await supabase
+      let data, error;
+      
+      const response = await supabase
         .from('cats')
         .insert([newCat])
         .select();
+      
+      data = response.data;
+      error = response.error;
+
+      // Safe fallback: if column is undefined (error code 42703), retry without new columns
+      if (error && error.code === '42703') {
+        console.warn('Database table is missing tags or extra photo columns. Retrying with simplified schema...');
+        const { tags, photo_url_2, photo_url_3, ...simplifiedCat } = newCat;
+        
+        const retryResponse = await supabase
+          .from('cats')
+          .insert([simplifiedCat])
+          .select();
+          
+        data = retryResponse.data;
+        error = retryResponse.error;
+      }
 
       if (error) {
         throw error;

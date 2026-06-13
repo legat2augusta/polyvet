@@ -23,6 +23,21 @@ const DISTRICT_KEYS = {
   'Наурызбайский': 'districtNauryzbai'
 };
 
+const TAG_KEYS = {
+  kitten: 'tagKitten',
+  adult: 'tagAdult',
+  senior: 'tagSenior',
+  collar: 'tagCollar',
+  injured: 'tagInjured',
+  scared: 'tagScared',
+  friendly: 'tagFriendly',
+  home: 'tagHome',
+  oddeyes: 'tagOddEyes',
+  neutered: 'tagNeutered',
+  longhair: 'tagLongHair',
+  shorthair: 'tagShortHair'
+};
+
 export default function AIScanner({ targetCat, cats, onClose, lang }) {
   const [scanStep, setScanStep] = useState(0);
   const [logMessages, setLogMessages] = useState([]);
@@ -163,6 +178,23 @@ export default function AIScanner({ targetCat, cats, onClose, lang }) {
         if (cat.breed.toLowerCase() === targetCat.breed.toLowerCase()) baseScore += 10;
         
         score = baseScore + Math.floor(Math.random() * 9) - 4;
+      }
+      
+      // Calculate tag match adjustments
+      const targetTags = targetCat.tags || [];
+      const candidateTags = cat.tags || [];
+      
+      // 1. Add +8 points per matching tag
+      const matchingTags = targetTags.filter(t => candidateTags.includes(t));
+      const tagBonus = matchingTags.length * 8;
+      score += tagBonus;
+      
+      // 2. Heavy penalty for age conflicts (-35 points)
+      const targetAge = targetTags.find(t => ['kitten', 'adult', 'senior'].includes(t));
+      const candidateAge = candidateTags.find(t => ['kitten', 'adult', 'senior'].includes(t));
+      
+      if (targetAge && candidateAge && targetAge !== candidateAge) {
+        score -= 35;
       }
       
       // Clamp score for UI realism
@@ -336,6 +368,32 @@ export default function AIScanner({ targetCat, cats, onClose, lang }) {
                 <strong>{getTranslation('labelAngles', lang)}</strong> {targetPhotos.length}
               </p>
             )}
+            
+            {/* Target Cat Tags */}
+            {targetCat.tags && targetCat.tags.length > 0 && (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '12px', marginBottom: '12px' }}>
+                {targetCat.tags.map(tagId => {
+                  const tagKey = TAG_KEYS[tagId];
+                  if (!tagKey) return null;
+                  return (
+                    <span 
+                      key={tagId} 
+                      style={{
+                        fontSize: '0.75rem',
+                        padding: '3px 8px',
+                        borderRadius: '8px',
+                        background: 'rgba(249, 115, 22, 0.05)',
+                        border: '1px solid rgba(249, 115, 22, 0.2)',
+                        color: '#ffedd5'
+                      }}
+                    >
+                      {getTranslation(tagKey, lang)}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: '12px' }}>
               {targetCat.description || getTranslation('descNotSpecified', lang)}
             </p>
@@ -455,6 +513,33 @@ export default function AIScanner({ targetCat, cats, onClose, lang }) {
                               </span>
                               <span style={{ color: 'var(--text-muted)' }}>{getTranslation('labelDate', lang)} {match.date}</span>
                             </div>
+
+                            {/* Candidate Cat Tags with match highlighting */}
+                            {match.tags && match.tags.length > 0 && (
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '10px' }}>
+                                {match.tags.map(tagId => {
+                                  const tagKey = TAG_KEYS[tagId];
+                                  if (!tagKey) return null;
+                                  const isMatching = (targetCat.tags || []).includes(tagId);
+                                  return (
+                                    <span 
+                                      key={tagId} 
+                                      style={{
+                                        fontSize: '0.7rem',
+                                        padding: '2px 8px',
+                                        borderRadius: '6px',
+                                        background: isMatching ? 'rgba(16, 185, 129, 0.15)' : 'rgba(249, 115, 22, 0.05)',
+                                        border: `1px solid ${isMatching ? 'rgba(16, 185, 129, 0.4)' : 'rgba(249, 115, 22, 0.15)'}`,
+                                        color: isMatching ? '#34d399' : '#ffedd5',
+                                        fontWeight: isMatching ? 600 : 'normal'
+                                      }}
+                                    >
+                                      {getTranslation(tagKey, lang)}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                         </div>
 
