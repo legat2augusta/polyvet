@@ -135,10 +135,71 @@ export default function App() {
   const [dbWarning, setDbWarning] = useState(false);
   const [lang, setLang] = useState(() => localStorage.getItem('kotopoisk_lang') || 'ru');
   const [activeShareCat, setActiveShareCat] = useState(null);
+  const [selectedAdId, setSelectedAdId] = useState(null);
 
-  const handleShare = (cat) => {
+  const handleShare = async (cat) => {
+    let phone = cat.contact_phone;
+    if (!phone && !dbWarning) {
+      try {
+        const { data, error } = await supabase
+          .from('cats')
+          .select('contact_phone')
+          .eq('id', cat.id)
+          .single();
+        if (data && data.contact_phone) {
+          phone = data.contact_phone;
+          cat.contact_phone = phone;
+          setCats(prev => prev.map(c => c.id === cat.id ? { ...c, contact_phone: phone } : c));
+        }
+      } catch (err) {
+        console.warn('Failed to fetch contact phone for flyer:', err);
+      }
+    }
     setActiveShareCat(cat);
     logEvent('ad_shared', activeTab, { cat_id: cat.id, breed: cat.breed });
+  };
+
+  const handleClearAdFilter = () => {
+    setSelectedAdId(null);
+    try {
+      const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+      window.history.pushState({ path: newUrl }, '', newUrl);
+    } catch (e) {
+      console.warn('Failed to clean URL:', e);
+    }
+  };
+
+  const handleFetchPhone = async (catId) => {
+    try {
+      const existing = cats.find(c => c.id === catId);
+      if (existing && existing.contact_phone) {
+        return existing.contact_phone;
+      }
+      
+      if (dbWarning) {
+        const mock = DEFAULT_CATS.find(c => c.id === catId);
+        return mock ? mock.contact_phone : '';
+      }
+      
+      const { data, error } = await supabase
+        .from('cats')
+        .select('contact_phone')
+        .eq('id', catId)
+        .single();
+        
+      if (error) throw error;
+      
+      if (data && data.contact_phone) {
+        setCats(prev => prev.map(c => 
+          c.id === catId ? { ...c, contact_phone: data.contact_phone } : c
+        ));
+        return data.contact_phone;
+      }
+      return '';
+    } catch (err) {
+      console.error('Failed to fetch contact phone:', err);
+      return '';
+    }
   };
 
   const handleSetLang = (newLang) => {
@@ -158,7 +219,7 @@ export default function App() {
         setLoading(true);
         const { data, error } = await supabase
           .from('cats')
-          .select('id, created_at, status, breed, color, district, date, description, contact_name, contact_phone, photo_url, photo_url_2, photo_url_3, tags, latitude, longitude')
+          .select('id, created_at, status, breed, color, district, date, description, contact_name, photo_url, photo_url_2, photo_url_3, tags, latitude, longitude')
           .order('created_at', { ascending: false });
 
         if (error) {
@@ -180,7 +241,33 @@ export default function App() {
     }
 
     fetchCats();
-  }, []);
+  }, [dbWarning]);
+
+  // Handle URL deep linking for shared ads
+  useEffect(() => {
+    if (cats.length === 0) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const adIdStr = params.get('ad');
+      if (adIdStr) {
+        const adId = parseInt(adIdStr, 10);
+        if (!isNaN(adId)) {
+          const found = cats.find(c => c.id === adId);
+          if (found) {
+            setSelectedAdId(adId);
+            // Switch tabs depending on whether the cat is reunited
+            if (found.status === 'reunited') {
+              setActiveTab('reunions');
+            } else {
+              setActiveTab('dashboard');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to parse query param:', e);
+    }
+  }, [cats]);
 
   const handleAddCat = async (newCat) => {
     try {
@@ -405,21 +492,57 @@ export default function App() {
           </div>
         ) : (
           <>
+            {selectedAdId && activeTab !== 'scan' && activeTab !== 'admin' && (
+              <div className="container" style={{
+                background: 'rgba(249, 115, 22, 0.1)',
+                border: '1px solid rgba(249, 115, 22, 0.25)',
+                borderRadius: '16px',
+                padding: '16px 24px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                margin: '20px auto 0 auto',
+                width: 'calc(100% - 48px)',
+                maxWidth: '1200px'
+              }}>
+                <span style={{ fontSize: '0.9rem', color: '#fff', fontWeight: '500' }}>
+                  {getTranslation('deepLinkBannerText', lang)}
+                </span>
+                <button 
+                  className="btn btn-secondary" 
+                  onClick={handleClearAdFilter}
+                  style={{ padding: '8px 16px', fontSize: '0.8rem' }}
+                >
+                  {getTranslation('deepLinkClearBtn', lang)}
+                </button>
+              </div>
+            )}
+
             {activeTab === 'dashboard' && (
               <Dashboard 
-                cats={cats.filter(c => c.status !== 'reunited')} 
+                cats={
+                  selectedAdId 
+                    ? cats.filter(c => c.id === selectedAdId) 
+                    : cats.filter(c => c.status !== 'reunited')
+                } 
                 onScan={handleStartScan} 
                 onNavigateToReport={() => setActiveTab('report')} 
                 onDelete={handleDeleteCat}
                 onMarkReunited={handleMarkReunited}
                 onShare={handleShare}
+                onFetchPhone={handleFetchPhone}
                 lang={lang}
               />
             )}
 
             {activeTab === 'reunions' && (
               <ReunionsPage 
-                cats={cats} 
+                cats={
+                  selectedAdId 
+                    ? cats.filter(c => c.id === selectedAdId) 
+                    : cats
+                } 
                 onDelete={handleDeleteCat} 
                 onMarkReunited={handleMarkReunited}
                 onShare={handleShare}
@@ -443,6 +566,7 @@ export default function App() {
                   setActiveTab('dashboard');
                   setTargetCatForScan(null);
                 }} 
+                onFetchPhone={handleFetchPhone}
                 lang={lang}
               />
             )}

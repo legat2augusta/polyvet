@@ -289,6 +289,10 @@ export const translations = {
     flyerLabelDate: "Дата:",
     flyerLabelContact: "Контакты:",
     flyerLabelDesc: "Приметы:",
+    deepLinkBannerText: "Показано объявление по ссылке.",
+    deepLinkClearBtn: "Показать все",
+    cardShowContactsBtn: "Показать контакты",
+    cardCallBtn: "Позвонить",
   },
   kk: {
     // Header & Footer
@@ -580,6 +584,10 @@ export const translations = {
     flyerLabelDate: "Күні:",
     flyerLabelContact: "Байланыс:",
     flyerLabelDesc: "Белгілері:",
+    deepLinkBannerText: "Сілтеме бойынша хабарландыру көрсетілді.",
+    deepLinkClearBtn: "Барлығын көрсету",
+    cardShowContactsBtn: "Байланыс мәліметтерін көрсету",
+    cardCallBtn: "Қоңырау шалу",
   }
 };
 

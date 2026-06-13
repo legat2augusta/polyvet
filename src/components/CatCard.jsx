@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2, Heart, X, Share2 } from 'lucide-react';
+import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2, Heart, X, Share2, Phone, User } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
 
 const COLOR_KEYS = {
@@ -39,10 +39,12 @@ const TAG_KEYS = {
   shorthair: 'tagShortHair'
 };
 
-export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare, lang }) {
+export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare, onFetchPhone, lang }) {
   const isLost = cat.status === 'lost';
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [showContacts, setShowContacts] = useState(false);
+  const [loadingPhone, setLoadingPhone] = useState(false);
   const [deleteStep, setDeleteStep] = useState('passcode');
   const [passcode, setPasscode] = useState('');
   const [story, setStory] = useState('');
@@ -509,7 +511,7 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
           })()}
         </div>
 
-        {/* Action Button */}
+        {/* Action Button & Contact Details Reveal */}
         {cat.status === 'reunited' ? (
           <div style={{ 
             marginTop: 'auto', 
@@ -529,7 +531,89 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
             <span>{getTranslation('statusReunited', lang)}</span>
           </div>
         ) : (
-          <div style={{ marginTop: 'auto' }}>
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {showContacts && cat.contact_phone ? (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                padding: '10px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                fontSize: '0.8rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
+                  <User size={12} color="var(--primary)" />
+                  <span>{cat.contact_name}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)' }}>
+                  <Phone size={12} color="var(--primary)" />
+                  <span style={{ fontFamily: 'monospace' }}>{cat.contact_phone}</span>
+                </div>
+                <div style={{ display: 'flex', gap: '6px', marginTop: '2px' }}>
+                  <a 
+                    href={`tel:${cat.contact_phone}`} 
+                    className="btn btn-secondary" 
+                    style={{ flex: 1, padding: '4px 0', fontSize: '0.75rem', height: 'auto', minHeight: '28px', justifyContent: 'center', whiteSpace: 'nowrap' }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {getTranslation('cardCallBtn', lang)}
+                  </a>
+                  <a 
+                    href={`https://wa.me/${cat.contact_phone.replace(/[^0-9]/g, '')}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn" 
+                    style={{ 
+                      flex: 1, 
+                      padding: '4px 0', 
+                      fontSize: '0.75rem', 
+                      height: 'auto', 
+                      minHeight: '28px', 
+                      justifyContent: 'center', 
+                      background: '#128c7e', 
+                      borderColor: '#128c7e',
+                      color: '#fff',
+                      fontWeight: '600'
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    WhatsApp
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <button 
+                className="btn btn-secondary" 
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  if (!cat.contact_phone && onFetchPhone) {
+                    setLoadingPhone(true);
+                    const phone = await onFetchPhone(cat.id);
+                    setLoadingPhone(false);
+                    if (phone) {
+                      setShowContacts(true);
+                    }
+                  } else {
+                    setShowContacts(true);
+                  }
+                }}
+                disabled={loadingPhone}
+                style={{ 
+                  width: '100%', 
+                  padding: '8px', 
+                  fontSize: '0.8rem', 
+                  justifyContent: 'center',
+                  fontWeight: '600',
+                  gap: '6px'
+                }}
+              >
+                <Phone size={14} />
+                {loadingPhone ? (lang === 'kk' ? 'Жүктелуде...' : 'Загрузка...') : getTranslation('cardShowContactsBtn', lang)}
+              </button>
+            )}
+            
             <button 
               className="btn btn-accent" 
               style={{ width: '100%', padding: '10px', fontSize: '0.85rem' }}

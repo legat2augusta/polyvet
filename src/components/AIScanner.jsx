@@ -41,13 +41,28 @@ const TAG_KEYS = {
   shorthair: 'tagShortHair'
 };
 
-export default function AIScanner({ targetCat, cats, onClose, lang }) {
+export default function AIScanner({ targetCat, cats, onClose, onFetchPhone, lang }) {
   const [scanStep, setScanStep] = useState(0);
   const [logMessages, setLogMessages] = useState([]);
   const [matches, setMatches] = useState([]);
   const [isScanning, setIsScanning] = useState(true);
   
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  
+  const [revealedPhones, setRevealedPhones] = useState({});
+  const [loadingPhones, setLoadingPhones] = useState({});
+
+  const handleRevealMatchPhone = async (matchId) => {
+    if (revealedPhones[matchId]) return;
+    setLoadingPhones(prev => ({ ...prev, [matchId]: true }));
+    const phone = await onFetchPhone(matchId);
+    setLoadingPhones(prev => ({ ...prev, [matchId]: false }));
+    if (phone) {
+      setRevealedPhones(prev => ({ ...prev, [matchId]: phone }));
+    } else {
+      alert(lang === 'kk' ? 'Байланыс телефонын жүктеу мүмкін болмады.' : 'Не удалось загрузить контактный телефон.');
+    }
+  };
 
   // Extract all non-empty photos for the scanner view
   const targetPhotos = [
@@ -564,19 +579,38 @@ export default function AIScanner({ targetCat, cats, onClose, lang }) {
                           flexWrap: 'wrap',
                           gap: '12px'
                         }}>
-                          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                            <strong>{getTranslation('labelAuthor', lang)}</strong> {match.contact_name || match.contactName || 'Аноним'} • <span style={{ color: 'var(--text-muted)' }}>{match.contact_phone || match.contactPhone}</span>
-                          </div>
-                          
-                          <a 
-                            href={`https://wa.me/${(match.contact_phone || match.contactPhone).replace(/[^0-9]/g, '')}`} 
-                            target="_blank" 
-                            rel="noreferrer"
-                            className="btn btn-primary" 
-                            style={{ padding: '8px 14px', fontSize: '0.8rem', borderRadius: '8px', gap: '4px' }}
-                          >
-                            <Phone size={14} /> {getTranslation('scanWriteBtn', lang)}
-                          </a>
+                          {revealedPhones[match.id] || match.contact_phone || match.contactPhone ? (
+                            <>
+                              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                <strong>{getTranslation('labelAuthor', lang)}</strong> {match.contact_name || match.contactName || 'Аноним'} • <span style={{ color: 'var(--text-muted)' }}>{revealedPhones[match.id] || match.contact_phone || match.contactPhone}</span>
+                              </div>
+                              
+                              <a 
+                                href={`https://wa.me/${(revealedPhones[match.id] || match.contact_phone || match.contactPhone).replace(/[^0-9]/g, '')}`} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="btn btn-primary" 
+                                style={{ padding: '8px 14px', fontSize: '0.8rem', borderRadius: '8px', gap: '4px' }}
+                              >
+                                <Phone size={14} /> {getTranslation('scanWriteBtn', lang)}
+                              </a>
+                            </>
+                          ) : (
+                            <>
+                              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                <strong>{getTranslation('labelAuthor', lang)}</strong> {match.contact_name || match.contactName || 'Аноним'}
+                              </div>
+                              <button
+                                onClick={() => handleRevealMatchPhone(match.id)}
+                                className="btn btn-secondary"
+                                disabled={loadingPhones[match.id]}
+                                style={{ padding: '8px 14px', fontSize: '0.8rem', borderRadius: '8px', gap: '4px' }}
+                              >
+                                <Phone size={14} />
+                                {loadingPhones[match.id] ? (lang === 'kk' ? 'Жүктелуде...' : 'Загрузка...') : getTranslation('cardShowContactsBtn', lang)}
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
