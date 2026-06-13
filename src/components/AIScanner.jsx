@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Cpu, ArrowLeft, RefreshCw, CheckCircle, Phone } from 'lucide-react';
+import { Cpu, ArrowLeft, RefreshCw, CheckCircle, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function AIScanner({ targetCat, cats, onClose }) {
   const [scanStep, setScanStep] = useState(0);
   const [logMessages, setLogMessages] = useState([]);
   const [matches, setMatches] = useState([]);
   const [isScanning, setIsScanning] = useState(true);
+  
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  // Extract all non-empty photos for the scanner view
+  const targetPhotos = [
+    targetCat.photo_url || targetCat.photo,
+    targetCat.photo_url_2,
+    targetCat.photo_url_3
+  ].filter(Boolean);
 
   useEffect(() => {
-    // Determine if it is a stock stock cat or user test upload
+    // Determine if it is a stock cat or user test upload
     const isDemoCat = targetCat.photo_url?.startsWith('/assets/cats/');
     const isTest = targetCat.description?.toLowerCase().includes('схема') || 
                    targetCat.description?.toLowerCase().includes('тест') || 
@@ -22,28 +31,36 @@ export default function AIScanner({ targetCat, cats, onClose }) {
 
     const runNextStep = (stepArray) => {
       if (currentStep < stepArray.length) {
+        const step = stepArray[currentStep];
+        
+        // Auto-slide to the corresponding photo during scanning
+        if (step.photoIndex !== undefined) {
+          setCurrentPhotoIndex(step.photoIndex);
+        }
+
         setLogMessages(prev => [...prev, {
           time: new Date().toLocaleTimeString(),
-          text: stepArray[currentStep].text,
-          isWarning: stepArray[currentStep].isWarning
+          text: step.text,
+          isWarning: step.isWarning
         }]);
         
         timer = setTimeout(() => {
           currentStep++;
           setScanStep(currentStep);
           runNextStep(stepArray);
-        }, stepArray[currentStep].delay);
+        }, step.delay);
       } else {
         // Scanning finished, calculate match percentages
         calculateMatches();
         setIsScanning(false);
+        setCurrentPhotoIndex(0); // Reset to main photo
       }
     };
 
     // Construct steps array dynamically
     const dynamicSteps = [
-      { text: 'Инициализация модели распознавания образов (ResNet50 + Vision Transformer)...', delay: 800 },
-      { text: `Обнаружение объекта на фото... Уверенность детектора мордочки: ${faceConfidence}%`, delay: 800 }
+      { text: 'Инициализация модели распознавания образов (ResNet50 + Vision Transformer)...', delay: 800, photoIndex: 0 },
+      { text: `Обнаружение объекта на фото... Уверенность детектора мордочки: ${faceConfidence}%`, delay: 800, photoIndex: 0 }
     ];
 
     // If confidence is low, inject warning log
@@ -51,12 +68,40 @@ export default function AIScanner({ targetCat, cats, onClose }) {
       dynamicSteps.push({ 
         text: `[!] ПРЕДУПРЕЖДЕНИЕ: Низкая уверенность распознавания мордочки кошки. Точность ИИ-сопоставления снижена. Пожалуйста, убедитесь, что фото содержит четкое изображение питомца спереди.`, 
         delay: 1500,
-        isWarning: true 
+        isWarning: true,
+        photoIndex: 0
       });
     }
 
     dynamicSteps.push(
-      { text: `Анализ окраса и структуры шерсти (Обнаружен основной цвет: ${targetCat.color})...`, delay: 1000 },
+      { text: `Анализ окраса и структуры шерсти (Обнаружен основной цвет: ${targetCat.color})...`, delay: 1000, photoIndex: 0 }
+    );
+
+    // If there are multiple photos, add steps to scan them dynamically
+    if (targetPhotos.length > 1) {
+      dynamicSteps.push({
+        text: `Анализ ракурса 2 (Выделение контуров тела и дополнительных признаков)...`,
+        delay: 1000,
+        photoIndex: 1
+      });
+    }
+    if (targetPhotos.length > 2) {
+      dynamicSteps.push({
+        text: `Анализ ракурса 3 (Проверка особых примет, пятен и структуры шерсти)...`,
+        delay: 1000,
+        photoIndex: 2
+      });
+    }
+
+    if (targetPhotos.length > 1) {
+      dynamicSteps.push({
+        text: `Слияние многоракурсных дескрипторов (Multi-view Feature Fusion: ${targetPhotos.length} фото в единый эмбеддинг)...`,
+        delay: 1000,
+        photoIndex: 0
+      });
+    }
+
+    dynamicSteps.push(
       { text: 'Извлечение вектора визуальных признаков (512-мерный дескриптор эмбеддинга)...', delay: 900 },
       { text: `Фильтрация базы данных по геопозиции (${targetCat.district} район и смежные)...`, delay: 800 },
       { text: 'Вычисление косинусного сходства (Cosine Similarity) по всей базе данных...', delay: 700 },
@@ -138,6 +183,14 @@ export default function AIScanner({ targetCat, cats, onClose }) {
     setMatches(relevantMatches);
   };
 
+  const handleNextPhoto = () => {
+    setCurrentPhotoIndex((prev) => (prev + 1) % targetPhotos.length);
+  };
+
+  const handlePrevPhoto = () => {
+    setCurrentPhotoIndex((prev) => (prev - 1 + targetPhotos.length) % targetPhotos.length);
+  };
+
   return (
     <div className="container" style={{ padding: '40px 24px' }}>
       {/* Header */}
@@ -163,7 +216,7 @@ export default function AIScanner({ targetCat, cats, onClose }) {
           
           <div className="scanner-container" style={{ width: '100%', height: '300px', background: '#0a0d18', position: 'relative' }}>
             <img 
-              src={targetCat.photo_url || targetCat.photo} 
+              src={targetPhotos[currentPhotoIndex]} 
               alt="Сканируемый кот" 
               style={{ width: '100%', height: '100%', objectFit: 'contain' }}
             />
@@ -171,6 +224,94 @@ export default function AIScanner({ targetCat, cats, onClose }) {
               <>
                 <div className="laser-line"></div>
                 <div className="scan-overlay"></div>
+              </>
+            )}
+
+            {/* Carousel Controls (only after scanning completes and if there are multiple photos) */}
+            {!isScanning && targetPhotos.length > 1 && (
+              <>
+                {/* Left Arrow */}
+                <button
+                  onClick={handlePrevPhoto}
+                  style={{
+                    position: 'absolute',
+                    left: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    zIndex: 15,
+                    transition: 'var(--transition-smooth)'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'}
+                >
+                  <ChevronLeft size={18} />
+                </button>
+
+                {/* Right Arrow */}
+                <button
+                  onClick={handleNextPhoto}
+                  style={{
+                    position: 'absolute',
+                    right: '8px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    border: 'none',
+                    borderRadius: '50%',
+                    width: '32px',
+                    height: '32px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    zIndex: 15,
+                    transition: 'var(--transition-smooth)'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'var(--primary)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'rgba(0, 0, 0, 0.5)'}
+                >
+                  <ChevronRight size={18} />
+                </button>
+
+                {/* Dot Indicators */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '12px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  display: 'flex',
+                  gap: '6px',
+                  zIndex: 15
+                }}>
+                  {targetPhotos.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCurrentPhotoIndex(idx)}
+                      style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        border: 'none',
+                        background: currentPhotoIndex === idx ? 'var(--primary)' : 'rgba(255, 255, 255, 0.5)',
+                        cursor: 'pointer',
+                        padding: 0,
+                        boxShadow: currentPhotoIndex === idx ? '0 0 8px var(--primary)' : 'none',
+                        transition: 'var(--transition-smooth)'
+                      }}
+                    />
+                  ))}
+                </div>
               </>
             )}
           </div>
@@ -188,6 +329,11 @@ export default function AIScanner({ targetCat, cats, onClose }) {
             <p style={{ fontSize: '0.95rem', marginBottom: '8px', color: 'var(--text-secondary)' }}>
               <strong>Район:</strong> {targetCat.district} район
             </p>
+            {targetPhotos.length > 1 && (
+              <p style={{ fontSize: '0.85rem', marginBottom: '8px', color: 'var(--scan-accent)' }}>
+                <strong>Загружено ракурсов:</strong> {targetPhotos.length}
+              </p>
+            )}
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px', marginTop: '12px' }}>
               {targetCat.description || 'Описание не указано.'}
             </p>

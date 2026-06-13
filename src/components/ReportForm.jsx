@@ -52,19 +52,32 @@ export default function ReportForm({ onSubmit, onCancel }) {
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (photos.length >= 3) {
-        alert('Максимально можно загрузить до 3-х фотографий.');
-        return;
-      }
+    const selectedFiles = Array.from(e.target.files);
+    const availableSlots = 3 - photos.length;
+    
+    if (selectedFiles.length > availableSlots) {
+      alert(`Вы можете добавить еще максимум ${availableSlots} фото.`);
+    }
+
+    const filesToUpload = selectedFiles.slice(0, availableSlots);
+    
+    if (filesToUpload.length > 0) {
       setUploading(true);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPhotos(prev => [...prev, reader.result]);
-        setUploading(false);
-      };
-      reader.readAsDataURL(file);
+      let loadedCount = 0;
+      const loadedPhotos = [];
+
+      filesToUpload.forEach(file => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          loadedPhotos.push(reader.result);
+          loadedCount++;
+          if (loadedCount === filesToUpload.length) {
+            setPhotos(prev => [...prev, ...loadedPhotos]);
+            setUploading(false);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
     }
   };
 
@@ -304,6 +317,7 @@ export default function ReportForm({ onSubmit, onCancel }) {
                     ref={fileInputRef} 
                     onChange={handleFileChange} 
                     accept="image/*" 
+                    multiple
                     style={{ display: 'none' }} 
                     disabled={submitting}
                   />
