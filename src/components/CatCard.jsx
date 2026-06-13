@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2, Heart, X } from 'lucide-react';
+import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2, Heart, X, Share2 } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
 
 const COLOR_KEYS = {
@@ -39,7 +39,7 @@ const TAG_KEYS = {
   shorthair: 'tagShortHair'
 };
 
-export default function CatCard({ cat, onScan, onDelete, onMarkReunited, lang }) {
+export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare, lang }) {
   const isLost = cat.status === 'lost';
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -216,6 +216,46 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, lang })
           }}
         >
           <Trash2 size={16} />
+        </button>
+      )}
+
+      {/* Share Button */}
+      {onShare && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onShare(cat);
+          }}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: onDelete ? '50px' : '12px',
+            zIndex: 10,
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            borderRadius: '8px',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#e2e8f0',
+            cursor: 'pointer',
+            transition: 'var(--transition-smooth)'
+          }}
+          title={getTranslation('cardShareBtn', lang)}
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'var(--primary)';
+            e.currentTarget.style.color = '#fff';
+            e.currentTarget.style.border = '1px solid var(--primary)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+            e.currentTarget.style.color = '#e2e8f0';
+            e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+          }}
+        >
+          <Share2 size={16} />
         </button>
       )}
 

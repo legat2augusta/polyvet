@@ -3,7 +3,7 @@ import CatCard from './CatCard';
 import { Heart, Sparkles } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
 
-export default function ReunionsPage({ cats, onDelete, onMarkReunited, lang }) {
+export default function ReunionsPage({ cats, onDelete, onMarkReunited, onShare, lang }) {
   const reunitedCats = cats.filter(c => c.status === 'reunited');
 
   return (
@@ -65,6 +65,7 @@ export default function ReunionsPage({ cats, onDelete, onMarkReunited, lang }) {
               onScan={() => {}} // No scanning for reunited cats
               onDelete={onDelete} 
               onMarkReunited={onMarkReunited}
+              onShare={onShare}
               lang={lang} 
             />
           ))}

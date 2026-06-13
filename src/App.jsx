@@ -6,6 +6,7 @@ import AIScanner from './components/AIScanner';
 import FeedbackModal from './components/FeedbackModal';
 import AdminDashboard from './components/AdminDashboard';
 import ReunionsPage from './components/ReunionsPage';
+import FlyerModal from './components/FlyerModal';
 import { supabase, logEvent } from './supabaseClient';
 import { AlertTriangle } from 'lucide-react';
 import { getTranslation } from './utils/translations';
@@ -133,6 +134,12 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [dbWarning, setDbWarning] = useState(false);
   const [lang, setLang] = useState(() => localStorage.getItem('kotopoisk_lang') || 'ru');
+  const [activeShareCat, setActiveShareCat] = useState(null);
+
+  const handleShare = (cat) => {
+    setActiveShareCat(cat);
+    logEvent('ad_shared', activeTab, { cat_id: cat.id, breed: cat.breed });
+  };
 
   const handleSetLang = (newLang) => {
     setLang(newLang);
@@ -405,6 +412,7 @@ export default function App() {
                 onNavigateToReport={() => setActiveTab('report')} 
                 onDelete={handleDeleteCat}
                 onMarkReunited={handleMarkReunited}
+                onShare={handleShare}
                 lang={lang}
               />
             )}
@@ -414,6 +422,7 @@ export default function App() {
                 cats={cats} 
                 onDelete={handleDeleteCat} 
                 onMarkReunited={handleMarkReunited}
+                onShare={handleShare}
                 lang={lang}
               />
             )}
@@ -483,6 +492,16 @@ export default function App() {
 
       {/* Floating Feedback Button Modal */}
       {activeTab !== 'admin' && <FeedbackModal lang={lang} />}
+
+      {/* Flyer Share Modal */}
+      {activeShareCat && (
+        <FlyerModal 
+          key={activeShareCat.id}
+          cat={activeShareCat} 
+          onClose={() => setActiveShareCat(null)} 
+          lang={lang} 
+        />
+      )}
     </div>
   );
 }

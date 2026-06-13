@@ -271,6 +271,24 @@ export const translations = {
     storySaveBtn: "Опубликовать счастливую историю",
     storySkipBtn: "Пропустить и просто перенести в счастливые истории",
     storySuccess: "Поздравляем! Котик перенесен в счастливые истории.",
+
+    // Flyer & Social Sharing
+    cardShareBtn: "Поделиться / Создать листовку",
+    flyerModalTitle: "Поделиться объявлением",
+    flyerDownloadBtn: "Скачать как фото (PNG)",
+    flyerCopyLinkBtn: "Копировать ссылку",
+    flyerCopiedAlert: "Ссылка и текст скопированы в буфер обмена!",
+    flyerShareTextTemplate: "Помогите найти котика! {statusText} {breed} в {district} районе Алматы. Фото и контакты по ссылке: {url}",
+    flyerQRDesc: "Сканируйте QR, чтобы открыть контакты",
+    flyerHelpMessage: "Пожалуйста, помогите вернуть питомца домой!",
+    flyerTitleLost: "ПРОПАЛ КОТ / КОШКА",
+    flyerTitleFound: "НАЙДЕН КОТ / КОШКА",
+    flyerLabelBreed: "Порода:",
+    flyerLabelColor: "Окрас:",
+    flyerLabelDistrict: "Район:",
+    flyerLabelDate: "Дата:",
+    flyerLabelContact: "Контакты:",
+    flyerLabelDesc: "Приметы:",
   },
   kk: {
     // Header & Footer
@@ -544,6 +562,24 @@ export const translations = {
     storySaveBtn: "Сәтті оқиғаларға жариялау",
     storySkipBtn: "Мұрағатқа жай ғана ауыстыру",
     storySuccess: "Құттықтаймыз! Мысық сәтті оқиғаларға көшірілді.",
+
+    // Flyer & Social Sharing
+    cardShareBtn: "Бөлісу / Листовка жасау",
+    flyerModalTitle: "Хабарландырумен бөлісу",
+    flyerDownloadBtn: "Фото ретінде жүктеу (PNG)",
+    flyerCopyLinkBtn: "Сілтемені көшіру",
+    flyerCopiedAlert: "Сілтеме мен мәтін алмасу буферіне көшірілді!",
+    flyerShareTextTemplate: "Мысықты табуға көмектесіңізші! Алматының {district} ауданында мысық {statusText} (тұқымы: {breed}). Фото мен байланыс сілтемеде: {url}",
+    flyerQRDesc: "Байланыс деректерін ашу үшін QR сканерлеңіз",
+    flyerHelpMessage: "Үй жануарын үйіне қайтаруға көмектесіңізші!",
+    flyerTitleLost: "МЫСЫҚ ЖОҒАЛДЫ",
+    flyerTitleFound: "МЫСЫҚ ТАБЫЛДЫ",
+    flyerLabelBreed: "Тұқымы:",
+    flyerLabelColor: "Түсі:",
+    flyerLabelDistrict: "Ауданы:",
+    flyerLabelDate: "Күні:",
+    flyerLabelContact: "Байланыс:",
+    flyerLabelDesc: "Белгілері:",
   }
 };
 
