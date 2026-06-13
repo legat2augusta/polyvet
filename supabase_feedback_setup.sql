@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS feedback (
 ALTER TABLE feedback ENABLE ROW LEVEL SECURITY;
 
 -- Policy for INSERT (anyone can submit feedback)
+DROP POLICY IF EXISTS "Allow anonymous insertions" ON feedback;
 CREATE POLICY "Allow anonymous insertions" 
 ON feedback 
 FOR INSERT 
