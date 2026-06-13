@@ -109,8 +109,8 @@ export default function ReportForm({ onSubmit, onCancel }) {
         district,
         date,
         description: description.trim(),
-        contactName: contactName.trim() || 'Аноним',
-        contactPhone: contactPhone.trim(),
+        contact_name: contactName.trim() || 'Аноним',
+        contact_phone: contactPhone.trim(),
         photo_url: finalPhotoUrl,
         latitude: position[0],
         longitude: position[1]
