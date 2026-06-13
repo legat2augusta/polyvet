@@ -178,6 +178,17 @@ export default function App() {
       const addedCat = data[0];
       setCats(prevCats => [addedCat, ...prevCats]);
       
+      // Save passcode in localStorage for auto-deletion
+      if (addedCat && addedCat.id && addedCat.passcode) {
+        try {
+          const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+          myPosts[addedCat.id] = addedCat.passcode;
+          localStorage.setItem('kotopoisk_my_posts', JSON.stringify(myPosts));
+        } catch (e) {
+          console.warn('Could not save post ownership to localStorage:', e);
+        }
+      }
+      
       // Trigger scanning with this new cat
       setTargetCatForScan(addedCat);
       setActiveTab('scan');
@@ -204,6 +215,52 @@ export default function App() {
   const handleStartScan = (cat) => {
     setTargetCatForScan(cat);
     setActiveTab('scan');
+  };
+
+  const handleDeleteCat = async (id, passcode) => {
+    try {
+      const { data, error: fetchErr } = await supabase
+        .from('cats')
+        .select('passcode')
+        .eq('id', id)
+        .single();
+
+      if (fetchErr) {
+        throw new Error('Не удалось найти объявление в базе данных.');
+      }
+
+      const adminMasterCode = 'kotopoisk2026';
+      const isAuthorized = !data.passcode || data.passcode === passcode || passcode === adminMasterCode;
+
+      if (!isAuthorized) {
+        alert('Неверный код доступа. Удаление отклонено.');
+        return false;
+      }
+
+      const { error: deleteErr } = await supabase
+        .from('cats')
+        .delete()
+        .eq('id', id);
+
+      if (deleteErr) {
+        throw deleteErr;
+      }
+
+      setCats(prevCats => prevCats.filter(cat => cat.id !== id));
+
+      try {
+        const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+        delete myPosts[id];
+        localStorage.setItem('kotopoisk_my_posts', JSON.stringify(myPosts));
+      } catch (e) {}
+
+      alert('Объявление успешно удалено.');
+      return true;
+    } catch (err) {
+      console.error('Ошибка при удалении:', err);
+      alert('Не удалось удалить объявление: ' + err.message);
+      return false;
+    }
   };
 
   return (
@@ -262,6 +319,7 @@ export default function App() {
                 cats={cats} 
                 onScan={handleStartScan} 
                 onNavigateToReport={() => setActiveTab('report')} 
+                onDelete={handleDeleteCat}
               />
             )}
             

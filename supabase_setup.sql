@@ -16,7 +16,8 @@ create table if not exists cats (
   photo_url text not null,
   latitude double precision not null default 43.2389,
   longitude double precision not null default 76.8897,
-  embedding vector(384) -- 384-мерный вектор для ИИ-поиска по тексту/изображениям
+  embedding vector(384), -- 384-мерный вектор для ИИ-поиска по тексту/изображениям
+  passcode text -- 4-значный код для самостоятельного удаления/редактирования объявления
 );
 
 -- Настройка публичного доступа (упрощенная политика безопасности для MVP)

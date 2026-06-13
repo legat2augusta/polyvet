@@ -23,7 +23,7 @@ const COLORS = [
   'Сиамский'
 ];
 
-export default function Dashboard({ cats, onScan, onNavigateToReport }) {
+export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -195,7 +195,7 @@ export default function Dashboard({ cats, onScan, onNavigateToReport }) {
       {filteredCats.length > 0 ? (
         <div className="cats-grid">
           {filteredCats.map(cat => (
-            <CatCard key={cat.id} cat={cat} onScan={onScan} />
+            <CatCard key={cat.id} cat={cat} onScan={onScan} onDelete={onDelete} />
           ))}
         </div>
       ) : (

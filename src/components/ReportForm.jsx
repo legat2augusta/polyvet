@@ -119,6 +119,9 @@ export default function ReportForm({ onSubmit, onCancel }) {
         console.warn('Не удалось извлечь ИИ-вектор признаков:', embErr);
       }
 
+      // Generate a random 4-digit deletion passcode (e.g., "5829")
+      const passcode = Math.floor(1000 + Math.random() * 9000).toString();
+
       for (let i = 0; i < photos.length; i++) {
         const photoItem = photos[i];
         
@@ -165,8 +168,11 @@ export default function ReportForm({ onSubmit, onCancel }) {
         photo_url_3: uploadedUrls[2] || null,
         latitude: position[0],
         longitude: position[1],
-        embedding: embeddingVector // Save the real vector in PostgreSQL!
+        embedding: embeddingVector, // Save the real vector in PostgreSQL!
+        passcode: passcode // Save the passcode in DB
       };
+
+      alert(`Объявление успешно опубликовано!\n\nКод для удаления с других устройств: ${passcode}\n(На этом устройстве удаление будет происходить автоматически)`);
 
       await onSubmit(newCat);
     } catch (err) {

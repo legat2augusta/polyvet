@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, MapPin, Cpu, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
-export default function CatCard({ cat, onScan }) {
+export default function CatCard({ cat, onScan, onDelete }) {
   const isLost = cat.status === 'lost';
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
@@ -46,6 +46,62 @@ export default function CatCard({ cat, onScan }) {
           {isLost ? 'Пропал' : 'Найден'}
         </span>
       </div>
+
+      {/* Delete Button */}
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            const localPasscode = (() => {
+              try {
+                const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+                return myPosts[cat.id] || null;
+              } catch (err) {
+                return null;
+              }
+            })();
+
+            if (localPasscode) {
+              if (window.confirm('Вы действительно хотите удалить это объявление?')) {
+                onDelete(cat.id, localPasscode);
+              }
+            } else {
+              const enteredCode = window.prompt('Введите 4-значный код удаления (выданный при публикации) или пароль администратора:');
+              if (enteredCode !== null) {
+                onDelete(cat.id, enteredCode.trim());
+              }
+            }
+          }}
+          style={{
+            position: 'absolute',
+            top: '12px',
+            right: '12px',
+            zIndex: 10,
+            background: 'rgba(239, 68, 68, 0.15)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '8px',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#f87171',
+            cursor: 'pointer',
+            transition: 'var(--transition-smooth)'
+          }}
+          title="Удалить объявление"
+          onMouseOver={(e) => {
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)';
+            e.currentTarget.style.color = '#fff';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+            e.currentTarget.style.color = '#f87171';
+          }}
+        >
+          <Trash2 size={16} />
+        </button>
+      )}
 
       {/* Cat Photo / Carousel */}
       <div style={{
