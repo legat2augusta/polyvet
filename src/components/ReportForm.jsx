@@ -4,6 +4,7 @@ import CatsMap from './CatsMap';
 import { supabase } from '../supabaseClient';
 import { compressImage, extractImageEmbedding } from '../utils/imageAI';
 import { getTranslation } from '../utils/translations';
+import { getFallbackDistrict, DISTRICT_CENTROIDS } from '../utils/geoUtils';
 
 const ALMATY_DISTRICTS = [
   'Бостандыкский',
@@ -102,32 +103,7 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
   const [position, setPosition] = useState([43.2389, 76.8897]);
 
   const autoDetectDistrict = async (lat, lng) => {
-    // 1. Local Voronoi Fallback (approximate centroids of the 8 Almaty districts)
-    const centroids = {
-      'Бостандыкский': [43.2045, 76.8872],
-      'Медеуский': [43.2389, 76.9634],
-      'Алмалинский': [43.2500, 76.9180],
-      'Ауэзовский': [43.2260, 76.8450],
-      'Алатауский': [43.2900, 76.8150],
-      'Жетысуский': [43.2920, 76.9280],
-      'Турксибский': [43.3320, 76.9600],
-      'Наурызбайский': [43.1900, 76.8050]
-    };
-
-    const getFallbackDistrict = (latVal, lngVal) => {
-      let minDistance = Infinity;
-      let closest = 'Бостандыкский';
-      for (const [name, center] of Object.entries(centroids)) {
-        const d = Math.sqrt(Math.pow(latVal - center[0], 2) + Math.pow(lngVal - center[1], 2));
-        if (d < minDistance) {
-          minDistance = d;
-          closest = name;
-        }
-      }
-      return closest;
-    };
-
-    // 2. Query Nominatim API with 2-second timeout
+    // 1. Query Nominatim API with 2-second timeout
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 2000);
@@ -145,7 +121,7 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
       const cityDistrict = data.address?.city_district || '';
       
       // Match the city_district string with our Almaty districts list
-      const districtsList = Object.keys(centroids);
+      const districtsList = Object.keys(DISTRICT_CENTROIDS);
       const matched = districtsList.find(d => cityDistrict.toLowerCase().includes(d.toLowerCase()));
       
       if (matched) {
