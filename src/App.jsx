@@ -219,31 +219,19 @@ export default function App() {
 
   const handleDeleteCat = async (id, passcode) => {
     try {
-      const { data, error: fetchErr } = await supabase
-        .from('cats')
-        .select('passcode')
-        .eq('id', id)
-        .single();
+      // Call the secure Supabase RPC function on the server
+      const { data: success, error: rpcErr } = await supabase.rpc('delete_cat_with_passcode', {
+        cat_id: id,
+        input_passcode: passcode
+      });
 
-      if (fetchErr) {
-        throw new Error('Не удалось найти объявление в базе данных.');
+      if (rpcErr) {
+        throw rpcErr;
       }
 
-      const adminMasterCode = 'kotopoisk2026';
-      const isAuthorized = !data.passcode || data.passcode === passcode || passcode === adminMasterCode;
-
-      if (!isAuthorized) {
+      if (!success) {
         alert('Неверный код доступа. Удаление отклонено.');
         return false;
-      }
-
-      const { error: deleteErr } = await supabase
-        .from('cats')
-        .delete()
-        .eq('id', id);
-
-      if (deleteErr) {
-        throw deleteErr;
       }
 
       setCats(prevCats => prevCats.filter(cat => cat.id !== id));

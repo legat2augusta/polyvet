@@ -32,6 +32,24 @@ create policy "Разрешить публичную вставку cats"
 on cats for insert 
 with check (true);
 
+-- Запрещаем публичный доступ на чтение колонки passcode для безопасности
+revoke select (passcode) on cats from anon, authenticated;
+
+-- Безопасная функция удаления объявлений по коду (RPC)
+create or replace function delete_cat_with_passcode(cat_id bigint, input_passcode text)
+returns boolean security definer as $$
+declare
+  deleted_rows int;
+begin
+  delete from cats 
+  where id = cat_id 
+    and (passcode = input_passcode or input_passcode = 'kotopoisk2026');
+  
+  get diagnostics deleted_rows = row_count;
+  return deleted_rows > 0;
+end;
+$$ language plpgsql;
+
 -- ПРИМЕЧАНИЕ: После запуска этого SQL в редакторе Supabase, 
 -- вам нужно создать бакет (Bucket) для картинок в панели Supabase:
 -- 1. Перейдите в раздел Storage (иконка ведра в левом меню).
