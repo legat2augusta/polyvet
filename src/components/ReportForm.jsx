@@ -57,16 +57,7 @@ const COLOR_KEYS = {
   'Двухцветный': 'colorBicolor'
 };
 
-const COLOR_EXAMPLES = {
-  'Рыжий': '/assets/cats/ginger.png',
-  'Черный': '/assets/cats/black.png',
-  'Белый': 'https://images.unsplash.com/photo-1618826411640-d6df44dd3f7a?q=80&w=200&auto=format&fit=crop',
-  'Серый': 'https://images.unsplash.com/photo-1548247416-ec66f4900b2e?q=80&w=200&auto=format&fit=crop',
-  'Трехцветный': '/assets/cats/calico.png',
-  'Сиамский': '/assets/cats/siamese.png',
-  'Полосатый': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=200&auto=format&fit=crop',
-  'Двухцветный': '/assets/cats/white_grey.png'
-};
+
 
 const DEMO_KEYS = {
   'Рыжий': 'formDemoNameGinger',
@@ -531,38 +522,19 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
               />
             </div>
 
-            {/* Color with preview example thumbnail */}
-            <div className="input-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Color */}
+            <div className="input-group">
               <span className="input-label">{getTranslation('formColorLabel', lang)}</span>
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                <select 
-                  value={color}
-                  onChange={(e) => setColor(e.target.value)}
-                  className="form-select"
-                  disabled={submitting}
-                  style={{ flexGrow: 1 }}
-                >
-                  {COLORS.map(c => (
-                    <option key={c} value={c}>{getTranslation(COLOR_KEYS[c], lang)}</option>
-                  ))}
-                </select>
-                <div style={{
-                  width: '70px',
-                  height: '70px',
-                  borderRadius: '12px',
-                  overflow: 'hidden',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  background: '#0c0f1d',
-                  flexShrink: 0,
-                  boxShadow: '0 4px 10px rgba(0,0,0,0.3)'
-                }}>
-                  <img 
-                    src={COLOR_EXAMPLES[color]} 
-                    alt={color} 
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-              </div>
+              <select 
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="form-select"
+                disabled={submitting}
+              >
+                {COLORS.map(c => (
+                  <option key={c} value={c}>{getTranslation(COLOR_KEYS[c], lang)}</option>
+                ))}
+              </select>
             </div>
           </div>
 
