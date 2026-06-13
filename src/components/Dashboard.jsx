@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import CatCard from './CatCard';
 import CatsMap from './CatsMap';
-import { Search, Filter, AlertCircle, PlusCircle } from 'lucide-react';
+import { Search, Filter, AlertCircle, PlusCircle, Heart } from 'lucide-react';
 
 const ALMATY_DISTRICTS = [
   'Бостандыкский',
@@ -29,9 +29,19 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [showOnlyMyPosts, setShowOnlyMyPosts] = useState(false);
 
   // Filter cats based on selections
   const filteredCats = cats.filter(cat => {
+    if (showOnlyMyPosts) {
+      try {
+        const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+        if (!myPosts[cat.id]) return false;
+      } catch (e) {
+        return false;
+      }
+    }
+
     const matchesSearch = 
       (cat.breed && cat.breed.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (cat.description && cat.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -126,6 +136,23 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete }
               ))}
             </select>
           </div>
+
+          {/* Toggle My Ads */}
+          <button 
+            className={`btn ${showOnlyMyPosts ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ 
+              padding: '12px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              borderColor: showOnlyMyPosts ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+              background: showOnlyMyPosts ? 'rgba(249, 115, 22, 0.15)' : 'rgba(255,255,255,0.03)'
+            }}
+            onClick={() => setShowOnlyMyPosts(!showOnlyMyPosts)}
+          >
+            <Heart size={18} color={showOnlyMyPosts ? 'var(--primary)' : 'var(--text-secondary)'} />
+            Мои объявления
+          </button>
 
           {/* Toggle Advanced Filters */}
           <button 

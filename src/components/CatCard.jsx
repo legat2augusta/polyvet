@@ -267,6 +267,34 @@ export default function CatCard({ cat, onScan, onDelete }) {
             <Calendar size={14} />
             <span>{cat.date}</span>
           </div>
+
+          {/* Display passcode if we own this cat */}
+          {(() => {
+            try {
+              const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+              const localPasscode = myPosts[cat.id];
+              if (localPasscode) {
+                return (
+                  <div style={{ 
+                    marginTop: '8px', 
+                    padding: '6px 10px', 
+                    background: 'rgba(249, 115, 22, 0.08)', 
+                    border: '1px dashed rgba(249, 115, 22, 0.3)', 
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    color: 'var(--primary)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span>Код удаления: <strong style={{ letterSpacing: '0.05em' }}>{localPasscode}</strong></span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>(только у вас)</span>
+                  </div>
+                );
+              }
+            } catch (err) {}
+            return null;
+          })()}
         </div>
 
         {/* Action Button */}
