@@ -27,10 +27,12 @@ create table if not exists cats (
 -- Разрешаем чтение всем пользователям
 alter table cats enable row level security;
 
+drop policy if exists "Разрешить публичное чтение cats" on cats;
 create policy "Разрешить публичное чтение cats" 
 on cats for select 
 using (true);
 
+drop policy if exists "Разрешить публичную вставку cats" on cats;
 create policy "Разрешить публичную вставку cats" 
 on cats for insert 
 with check (true);
