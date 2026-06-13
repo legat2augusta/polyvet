@@ -1,3 +1,5 @@
+import ExifReader from 'exifreader';
+
 /**
  * Geographic Centroids for the 8 Administrative Districts of Almaty
  */
@@ -27,4 +29,23 @@ export const getFallbackDistrict = (lat, lng) => {
     }
   }
   return closest;
+};
+
+/**
+ * Parses GPS coordinates from a File or Blob object using ExifReader.
+ * Returns { latitude, longitude } or null.
+ */
+export const extractExifGPS = async (file) => {
+  try {
+    const tags = await ExifReader.load(file, { expanded: true });
+    if (tags && tags.gps && typeof tags.gps.Latitude === 'number' && typeof tags.gps.Longitude === 'number') {
+      return {
+        latitude: tags.gps.Latitude,
+        longitude: tags.gps.Longitude
+      };
+    }
+  } catch (err) {
+    console.warn('Failed to parse EXIF/GPS data:', err);
+  }
+  return null;
 };

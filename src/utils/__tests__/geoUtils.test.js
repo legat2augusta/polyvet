@@ -1,5 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { getFallbackDistrict, DISTRICT_CENTROIDS } from '../geoUtils';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { getFallbackDistrict, DISTRICT_CENTROIDS, extractExifGPS } from '../geoUtils';
+import ExifReader from 'exifreader';
+
+vi.mock('exifreader', () => {
+  return {
+    default: {
+      load: vi.fn()
+    }
+  };
+});
 
 describe('getFallbackDistrict', () => {
   it('should resolve coordinates close to Bostandyk center to Bostandyk', () => {
@@ -27,5 +36,46 @@ describe('getFallbackDistrict', () => {
     // Very far away should still pick the closest among Almaty districts
     expect(getFallbackDistrict(0, 0)).toBeDefined();
     expect(getFallbackDistrict(100, -100)).toBeDefined();
+  });
+});
+
+describe('extractExifGPS', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return parsed latitude and longitude if GPS tags exist', async () => {
+    ExifReader.load.mockResolvedValue({
+      gps: {
+        Latitude: 43.2389,
+        Longitude: 76.9634
+      }
+    });
+
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const result = await extractExifGPS(file);
+
+    expect(ExifReader.load).toHaveBeenCalledWith(file, { expanded: true });
+    expect(result).toEqual({ latitude: 43.2389, longitude: 76.9634 });
+  });
+
+  it('should return null if no GPS tags exist', async () => {
+    ExifReader.load.mockResolvedValue({
+      Model: { description: 'Canon' }
+    });
+
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const result = await extractExifGPS(file);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null if ExifReader throws an error', async () => {
+    ExifReader.load.mockRejectedValue(new Error('Invalid image format'));
+
+    const file = new File([''], 'test.jpg', { type: 'image/jpeg' });
+    const result = await extractExifGPS(file);
+
+    expect(result).toBeNull();
   });
 });

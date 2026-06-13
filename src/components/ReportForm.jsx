@@ -4,7 +4,7 @@ import CatsMap from './CatsMap';
 import { supabase } from '../supabaseClient';
 import { compressImage, extractImageEmbedding } from '../utils/imageAI';
 import { getTranslation } from '../utils/translations';
-import { getFallbackDistrict, DISTRICT_CENTROIDS } from '../utils/geoUtils';
+import { getFallbackDistrict, DISTRICT_CENTROIDS, extractExifGPS } from '../utils/geoUtils';
 
 const ALMATY_DISTRICTS = [
   'Бостандыкский',
@@ -142,6 +142,28 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
     }
   }, [position]);
 
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert(getTranslation('formGeolocError', lang));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setPosition([latitude, longitude]);
+      },
+      (error) => {
+        console.warn('Geolocation error:', error);
+        if (error.code === error.PERMISSION_DENIED) {
+          alert(getTranslation('formGeolocPermission', lang));
+        } else {
+          alert(getTranslation('formGeolocError', lang));
+        }
+      },
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+  };
+
   const handleToggleTag = (tagId) => {
     let newTags = [...selectedTags];
     if (newTags.includes(tagId)) {
@@ -192,7 +214,7 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
     setContactPhone(formatted);
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const selectedFiles = Array.from(e.target.files);
     const availableSlots = 3 - photos.length;
     
@@ -204,6 +226,22 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
     
     if (filesToUpload.length > 0) {
       setUploading(true);
+      
+      // Try to extract GPS coordinates from the uploaded photos
+      let gpsCoordinatesFound = null;
+      for (const file of filesToUpload) {
+        const gps = await extractExifGPS(file);
+        if (gps) {
+          gpsCoordinatesFound = gps;
+          break;
+        }
+      }
+
+      if (gpsCoordinatesFound) {
+        setPosition([gpsCoordinatesFound.latitude, gpsCoordinatesFound.longitude]);
+        alert(getTranslation('formGeotagFound', lang));
+      }
+
       let loadedCount = 0;
       const loadedPhotos = [];
 
@@ -539,8 +577,41 @@ export default function ReportForm({ onSubmit, onCancel, lang }) {
               {getTranslation('formMapSub', lang)}
             </p>
             <CatsMap selectMode={true} position={position} setPosition={setPosition} lang={lang} />
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '6px' }}>
-              {getTranslation('formCoordsLabel', lang)} {position[0].toFixed(5)}, {position[1].toFixed(5)}
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              marginTop: '12px',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {getTranslation('formCoordsLabel', lang)} {position[0].toFixed(5)}, {position[1].toFixed(5)}
+              </div>
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                disabled={submitting}
+                className="btn btn-secondary"
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  transition: 'var(--transition-smooth)',
+                }}
+                onMouseOver={(e) => !submitting && (e.currentTarget.style.background = 'var(--primary-light)')}
+                onMouseOut={(e) => !submitting && (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)')}
+              >
+                <MapPin size={14} color="var(--primary)" />
+                {getTranslation('formUseCurrentLocation', lang)}
+              </button>
             </div>
           </div>
 
