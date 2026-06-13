@@ -279,6 +279,10 @@ export default function AIScanner({ targetCat, cats, onClose, onFetchPhone, lang
             />
             {isScanning && (
               <>
+                <div className="radar-ring"></div>
+                <div className="radar-ring"></div>
+                <div className="radar-ring"></div>
+                <div className="cyber-grid-overlay"></div>
                 <div className="laser-line"></div>
                 <div className="scan-overlay"></div>
               </>

@@ -323,3 +323,200 @@ p {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================================
+   PREMIUM MODERN UI EFFECTS (Magic MCP / Modern Design Upgrades)
+   ========================================================================= */
+
+/* 1. Spotlight Card Effect */
+.glass-card {
+  position: relative;
+}
+
+.glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    350px circle at var(--mouse-x, 0px) var(--mouse-y, 0px),
+    rgba(249, 115, 22, 0.06),
+    transparent 80%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.glass-card:hover::before {
+  opacity: 1;
+}
+
+.glass-card-content {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 2. Cyber Scanner loading animations */
+@keyframes radar-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.radar-ring {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 250px;
+  height: 250px;
+  border: 2px solid var(--scan-accent);
+  border-radius: 50%;
+  animation: radar-pulse 3s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.radar-ring:nth-child(2) {
+  animation-delay: 1s;
+}
+
+.radar-ring:nth-child(3) {
+  animation-delay: 2s;
+}
+
+/* Digital Grid Scan Scan effect */
+.cyber-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 185, 129, 0.05) 1px, transparent 1px);
+  background-size: 20px 20px;
+  background-position: center;
+  z-index: 4;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+/* 3. Sliding Tab Navigation Indicator in Header */
+.nav-container {
+  position: relative;
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.nav-pill-active {
+  position: absolute;
+  height: calc(100% - 8px);
+  top: 4px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(249, 115, 22, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.nav-btn {
+  position: relative;
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-secondary) !important;
+  z-index: 2;
+  box-shadow: none !important;
+  transition: color 0.25s ease !important;
+}
+
+.nav-btn:hover {
+  color: #fff !important;
+  transform: none !important;
+}
+
+.nav-btn.active {
+  color: #fff !important;
+}
+
+/* 4. Tactile Micro-interactions */
+
+/* Image Carousel Fade Blur transition */
+@keyframes image-fade-in {
+  from {
+    opacity: 0.7;
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+.carousel-img-fade {
+  animation: image-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Icons Hover Rotate effect */
+.hover-rotate-scale {
+  transition: var(--transition-smooth) !important;
+}
+
+.hover-rotate-scale:hover {
+  transform: scale(1.1) rotate(6deg) !important;
+}
+
+.hover-scale {
+  transition: var(--transition-smooth) !important;
+}
+
+.hover-scale:hover {
+  transform: scale(1.08) !important;
+}
+
+/* SOS Neon Action Pulse Ripple */
+.btn-pulse {
+  position: relative;
+}
+
+.btn-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid var(--primary);
+  opacity: 0;
+  animation: btn-ripple 2.2s cubic-bezier(0.25, 0, 0, 1) infinite;
+}
+
+.btn-pulse-green::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid var(--scan-accent);
+  opacity: 0;
+  animation: btn-ripple 2.2s cubic-bezier(0.25, 0, 0, 1) infinite;
+}
+
+@keyframes btn-ripple {
+  0% {
+    transform: scale(1);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.15, 1.3);
+    opacity: 0;
+  }
+}

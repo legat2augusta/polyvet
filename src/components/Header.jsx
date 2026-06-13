@@ -1,8 +1,29 @@
-import React from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Search, PlusCircle, Heart, MapPin } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
 
 export default function Header({ activeTab, setActiveTab, activeCount, lang, setLang }) {
+  const dashboardRef = useRef(null);
+  const reunionsRef = useRef(null);
+  const reportRef = useRef(null);
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, opacity: 0 });
+
+  useEffect(() => {
+    let activeRef = null;
+    if (activeTab === 'dashboard') activeRef = dashboardRef;
+    else if (activeTab === 'reunions') activeRef = reunionsRef;
+    else if (activeTab === 'report') activeRef = reportRef;
+
+    if (activeRef && activeRef.current) {
+      const { offsetLeft, offsetWidth } = activeRef.current;
+      setPillStyle({
+        left: offsetLeft,
+        width: offsetWidth,
+        opacity: 1
+      });
+    }
+  }, [activeTab]);
+
   return (
     <header style={{
       borderBottom: '1px solid var(--card-border)',
@@ -48,9 +69,12 @@ export default function Header({ activeTab, setActiveTab, activeCount, lang, set
         </div>
 
         {/* Navigation */}
-        <nav style={{ display: 'flex', gap: '8px' }}>
+        <nav className="nav-container">
+          <div className="nav-pill-active" style={pillStyle} />
+
           <button 
-            className={`btn ${activeTab === 'dashboard' ? 'btn-primary' : 'btn-secondary'}`}
+            ref={dashboardRef}
+            className={`btn nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
             onClick={() => setActiveTab('dashboard')}
             style={{ padding: '8px 16px', fontSize: '0.9rem' }}
           >
@@ -59,7 +83,8 @@ export default function Header({ activeTab, setActiveTab, activeCount, lang, set
           </button>
 
           <button 
-            className={`btn ${activeTab === 'reunions' ? 'btn-primary' : 'btn-secondary'}`}
+            ref={reunionsRef}
+            className={`btn nav-btn ${activeTab === 'reunions' ? 'active' : ''}`}
             onClick={() => setActiveTab('reunions')}
             style={{ padding: '8px 16px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
@@ -68,7 +93,8 @@ export default function Header({ activeTab, setActiveTab, activeCount, lang, set
           </button>
           
           <button 
-            className={`btn ${activeTab === 'report' ? 'btn-primary' : 'btn-secondary'}`}
+            ref={reportRef}
+            className={`btn nav-btn ${activeTab === 'report' ? 'active' : ''}`}
             onClick={() => setActiveTab('report')}
             style={{ padding: '8px 16px', fontSize: '0.9rem' }}
           >

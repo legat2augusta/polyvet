@@ -45,6 +45,15 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [loadingPhone, setLoadingPhone] = useState(false);
+
+  const handleMouseMove = (e) => {
+    const card = e.currentTarget;
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    card.style.setProperty('--mouse-x', `${x}px`);
+    card.style.setProperty('--mouse-y', `${y}px`);
+  };
   const [deleteStep, setDeleteStep] = useState('passcode');
   const [passcode, setPasscode] = useState('');
   const [story, setStory] = useState('');
@@ -139,127 +148,132 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
   };
 
   return (
-    <div className={`glass-card ${cat.status === 'reunited' ? 'reunited-card' : ''}`} style={{
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      height: '100%',
-      position: 'relative',
-      border: cat.status === 'reunited' ? '2px solid rgba(249, 115, 22, 0.4)' : '1px solid var(--card-border)',
-      boxShadow: cat.status === 'reunited' ? '0 8px 32px rgba(249, 115, 22, 0.15)' : 'none',
-      transition: 'all 0.3s ease'
-    }}>
-      {/* Status Badge */}
-      <div style={{
-        position: 'absolute',
-        top: '12px',
-        left: '12px',
-        zIndex: 10
-      }}>
-        {cat.status === 'reunited' ? (
-          <span className="badge" style={{
-            background: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)',
-            color: '#ffffff',
-            boxShadow: '0 2px 10px rgba(249, 115, 22, 0.4)'
-          }}>
-            {getTranslation('statusReunited', lang)}
-          </span>
-        ) : (
-          <span className={`badge ${isLost ? 'badge-lost' : 'badge-found'}`}>
-            {isLost ? getTranslation('statusLost', lang) : getTranslation('statusFound', lang)}
-          </span>
+    <div 
+      className={`glass-card ${cat.status === 'reunited' ? 'reunited-card' : ''}`} 
+      onMouseMove={handleMouseMove}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        height: '100%',
+        position: 'relative',
+        border: cat.status === 'reunited' ? '2px solid rgba(249, 115, 22, 0.4)' : '1px solid var(--card-border)',
+        boxShadow: cat.status === 'reunited' ? '0 8px 32px rgba(249, 115, 22, 0.15)' : 'none',
+        transition: 'all 0.3s ease'
+      }}
+    >
+      <div className="glass-card-content">
+        {/* Status Badge */}
+        <div style={{
+          position: 'absolute',
+          top: '12px',
+          left: '12px',
+          zIndex: 10
+        }}>
+          {cat.status === 'reunited' ? (
+            <span className="badge" style={{
+              background: 'linear-gradient(135deg, #f97316 0%, #ec4899 100%)',
+              color: '#ffffff',
+              boxShadow: '0 2px 10px rgba(249, 115, 22, 0.4)'
+            }}>
+              {getTranslation('statusReunited', lang)}
+            </span>
+          ) : (
+            <span className={`badge ${isLost ? 'badge-lost' : 'badge-found'}`}>
+              {isLost ? getTranslation('statusLost', lang) : getTranslation('statusFound', lang)}
+            </span>
+          )}
+        </div>
+
+        {/* Delete Button */}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              let localPasscode = '';
+              try {
+                const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
+                localPasscode = myPosts[cat.id] || '';
+              } catch (err) {
+                console.warn('Failed to parse my posts:', err);
+              }
+              
+              setPasscode(localPasscode);
+              setDeleteStep(localPasscode ? 'reunited_question' : 'passcode');
+              setDeleteError(null);
+              setStory('');
+              setIsDeleteModalOpen(true);
+            }}
+            className="hover-rotate-scale"
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              zIndex: 10,
+              background: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '8px',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#f87171',
+              cursor: 'pointer'
+            }}
+            title="Удалить объявление"
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)';
+              e.currentTarget.style.color = '#fff';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+              e.currentTarget.style.color = '#f87171';
+            }}
+          >
+            <Trash2 size={16} />
+          </button>
         )}
-      </div>
 
-      {/* Delete Button */}
-      {onDelete && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            let localPasscode = '';
-            try {
-              const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
-              localPasscode = myPosts[cat.id] || '';
-            } catch (err) {
-              console.warn('Failed to parse my posts:', err);
-            }
-            
-            setPasscode(localPasscode);
-            setDeleteStep(localPasscode ? 'reunited_question' : 'passcode');
-            setDeleteError(null);
-            setStory('');
-            setIsDeleteModalOpen(true);
-          }}
-          style={{
-            position: 'absolute',
-            top: '12px',
-            right: '12px',
-            zIndex: 10,
-            background: 'rgba(239, 68, 68, 0.15)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: '8px',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#f87171',
-            cursor: 'pointer',
-            transition: 'var(--transition-smooth)'
-          }}
-          title="Удалить объявление"
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)';
-            e.currentTarget.style.color = '#fff';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
-            e.currentTarget.style.color = '#f87171';
-          }}
-        >
-          <Trash2 size={16} />
-        </button>
-      )}
-
-      {/* Share Button */}
-      {onShare && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onShare(cat);
-          }}
-          style={{
-            position: 'absolute',
-            top: '12px',
-            right: onDelete ? '50px' : '12px',
-            zIndex: 10,
-            background: 'rgba(255, 255, 255, 0.1)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            borderRadius: '8px',
-            width: '32px',
-            height: '32px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#e2e8f0',
-            cursor: 'pointer',
-            transition: 'var(--transition-smooth)'
-          }}
-          title={getTranslation('cardShareBtn', lang)}
-          onMouseOver={(e) => {
-            e.currentTarget.style.background = 'var(--primary)';
-            e.currentTarget.style.color = '#fff';
-            e.currentTarget.style.border = '1px solid var(--primary)';
-          }}
-          onMouseOut={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-            e.currentTarget.style.color = '#e2e8f0';
-            e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-          }}
-        >
-          <Share2 size={16} />
-        </button>
-      )}
+        {/* Share Button */}
+        {onShare && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onShare(cat);
+            }}
+            className="hover-rotate-scale"
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: onDelete ? '50px' : '12px',
+              zIndex: 10,
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '8px',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#e2e8f0',
+              cursor: 'pointer'
+            }}
+            title={getTranslation('cardShareBtn', lang)}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'var(--primary)';
+              e.currentTarget.style.color = '#fff';
+              e.currentTarget.style.border = '1px solid var(--primary)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.color = '#e2e8f0';
+              e.currentTarget.style.border = '1px solid rgba(255, 255, 255, 0.2)';
+            }}
+          >
+            <Share2 size={16} />
+          </button>
+        )}
 
       {/* Cat Photo / Carousel */}
       <div style={{
@@ -270,8 +284,10 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
         background: '#0c0f1d'
       }}>
         <img 
+          key={currentPhotoIndex}
           src={cardPhotos[currentPhotoIndex]} 
           alt={cat.breed || 'Кошка'} 
+          className="carousel-img-fade"
           style={{
             width: '100%',
             height: '100%',
@@ -615,7 +631,7 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
             )}
             
             <button 
-              className="btn btn-accent" 
+              className="btn btn-accent btn-pulse-green" 
               style={{ width: '100%', padding: '10px', fontSize: '0.85rem' }}
               onClick={() => onScan(cat)}
             >
@@ -624,6 +640,7 @@ export default function CatCard({ cat, onScan, onDelete, onMarkReunited, onShare
             </button>
           </div>
         )}
+      </div>
       </div>
 
       {/* Delete/Reunion Modal */}
