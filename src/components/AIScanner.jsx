@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Cpu, ArrowLeft, RefreshCw, CheckCircle, Phone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { calculateVectorSimilarity } from '../utils/imageAI';
 
 export default function AIScanner({ targetCat, cats, onClose }) {
   const [scanStep, setScanStep] = useState(0);
@@ -118,55 +119,31 @@ export default function AIScanner({ targetCat, cats, onClose }) {
     const candidates = cats.filter(cat => cat.id !== targetCat.id);
     
     const scoredCandidates = candidates.map(cat => {
-      let score = 15; // Base score
+      let score = 0;
       
-      // Opposite status match is highly relevant
-      if (cat.status !== targetCat.status) {
-        score += 25;
-      }
-      
-      // Color match
-      if (cat.color.toLowerCase() === targetCat.color.toLowerCase()) {
-        score += 35;
-      } else {
-        // Partial color matches
-        const colors = [cat.color.toLowerCase(), targetCat.color.toLowerCase()];
-        if (colors.includes('трехцветный') && (colors.includes('рыжий') || colors.includes('черный') || colors.includes('белый'))) {
-          score += 15;
-        }
-      }
-      
-      // District match
-      if (cat.district === targetCat.district) {
-        score += 20;
-      } else {
-        // Simulating neighboring districts
-        const neighbors = {
-          'Бостандыкский': ['Медеуский', 'Алмалинский', 'Ауэзовский'],
-          'Медеуский': ['Бостандыкский', 'Алмалинский', 'Жетысуский', 'Турксибский'],
-          'Алмалинский': ['Бостандыкский', 'Медеуский', 'Ауэзовский', 'Жетысуский'],
-          'Ауэзовский': ['Бостандыкский', 'Алмалинский', 'Алатауский', 'Наурызбайский'],
-          'Алатауский': ['Ауэзовский', 'Жетысуский', 'Турксибский'],
-          'Жетысуский': ['Медеуский', 'Алмалинский', 'Алатауский', 'Турксибский'],
-          'Турксибский': ['Медеуский', 'Жетысуский', 'Алатауский'],
-          'Наурызбайский': ['Ауэзовский', 'Бостандыкский']
-        };
+      // If both target and candidate have image embeddings, use real vector cosine similarity
+      if (targetCat.embedding && cat.embedding) {
+        const visualSimilarity = calculateVectorSimilarity(targetCat.embedding, cat.embedding);
         
-        if (neighbors[targetCat.district]?.includes(cat.district)) {
-          score += 10;
-        }
+        // Combine visual similarity (80% weight) with context attributes (20% weight: status & location)
+        let contextRelevance = 0;
+        if (cat.status !== targetCat.status) contextRelevance += 12; // opposite status relevance bonus
+        if (cat.district === targetCat.district) contextRelevance += 8; // same location bonus
+        
+        score = Math.round(visualSimilarity * 0.8 + contextRelevance);
+      } else {
+        // Fallback for mock/older cats without embeddings
+        let baseScore = 15;
+        if (cat.status !== targetCat.status) baseScore += 25;
+        if (cat.color.toLowerCase() === targetCat.color.toLowerCase()) baseScore += 35;
+        if (cat.district === targetCat.district) baseScore += 20;
+        if (cat.breed.toLowerCase() === targetCat.breed.toLowerCase()) baseScore += 10;
+        
+        score = baseScore + Math.floor(Math.random() * 9) - 4;
       }
       
-      // Breed match
-      if (cat.breed.toLowerCase() === targetCat.breed.toLowerCase()) {
-        score += 10;
-      }
-      
-      // Add minor randomness for realism
-      score += Math.floor(Math.random() * 9) - 4;
-      
-      // Clamp between 20 and 97
-      score = Math.max(20, Math.min(97, score));
+      // Clamp score for UI realism
+      score = Math.max(20, Math.min(98, score));
       
       return {
         ...cat,

@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Camera, ArrowLeft, Upload, Sparkles, Check, MapPin, Loader, X } from 'lucide-react';
 import CatsMap from './CatsMap';
 import { supabase } from '../supabaseClient';
+import { compressImage, extractImageEmbedding } from '../utils/imageAI';
 
 const ALMATY_DISTRICTS = [
   'Бостандыкский',
@@ -109,21 +110,30 @@ export default function ReportForm({ onSubmit, onCancel }) {
     try {
       const uploadedUrls = [];
 
+      // Extract the 64-D embedding vector from the primary photo
+      const primaryPhoto = photos[0];
+      let embeddingVector = null;
+      try {
+        embeddingVector = await extractImageEmbedding(primaryPhoto);
+      } catch (embErr) {
+        console.warn('Не удалось извлечь ИИ-вектор признаков:', embErr);
+      }
+
       for (let i = 0; i < photos.length; i++) {
         const photoItem = photos[i];
         
-        // If it's a new local image (represented as base64 string), upload to Supabase Storage
+        // If it's a new local image (represented as base64 string), compress and upload
         if (photoItem.startsWith('data:image/')) {
-          const response = await fetch(photoItem);
-          const blob = await response.blob();
+          // Compress the base64 photo to a lightweight JPEG blob
+          const compressedBlob = await compressImage(photoItem);
           
-          const fileExt = blob.type.split('/')[1] || 'png';
+          const fileExt = 'jpg';
           const fileName = `cats/${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
 
           const { error: uploadError } = await supabase.storage
             .from('cat-photos')
-            .upload(fileName, blob, {
-              contentType: blob.type
+            .upload(fileName, compressedBlob, {
+              contentType: 'image/jpeg'
             });
 
           if (uploadError) {
@@ -154,7 +164,8 @@ export default function ReportForm({ onSubmit, onCancel }) {
         photo_url_2: uploadedUrls[1] || null,
         photo_url_3: uploadedUrls[2] || null,
         latitude: position[0],
-        longitude: position[1]
+        longitude: position[1],
+        embedding: embeddingVector // Save the real vector in PostgreSQL!
       };
 
       await onSubmit(newCat);
