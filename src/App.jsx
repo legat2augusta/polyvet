@@ -185,6 +185,7 @@ export default function App() {
       // Safe fallback: if column is undefined (error code 42703), retry without new columns
       if (error && error.code === '42703') {
         console.warn('Database table is missing tags or extra photo columns. Retrying with simplified schema...');
+        // eslint-disable-next-line no-unused-vars
         const { tags, photo_url_2, photo_url_3, ...simplifiedCat } = newCat;
         
         const retryResponse = await supabase
@@ -265,7 +266,9 @@ export default function App() {
         const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
         delete myPosts[id];
         localStorage.setItem('kotopoisk_my_posts', JSON.stringify(myPosts));
-      } catch (e) {}
+      } catch (err) {
+        console.warn('Failed to update my posts in localStorage:', err);
+      }
 
       alert(getTranslation('deleteSuccess', lang));
       return true;
@@ -309,7 +312,9 @@ export default function App() {
         const myPosts = JSON.parse(localStorage.getItem('kotopoisk_my_posts') || '{}');
         delete myPosts[id];
         localStorage.setItem('kotopoisk_my_posts', JSON.stringify(myPosts));
-      } catch (e) {}
+      } catch (err) {
+        console.warn('Failed to update my posts in localStorage:', err);
+      }
 
       return true;
     } catch (err) {
