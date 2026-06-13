@@ -24,9 +24,6 @@ const COLORS = [
   'Трехцветный',
   'Сиамский',
   'Полосатый',
-  'Черепаховый',
-  'Шоколадный',
-  'Кремовый',
   'Двухцветный'
 ];
 
@@ -57,9 +54,6 @@ const COLOR_KEYS = {
   'Трехцветный': 'colorCalico',
   'Сиамский': 'colorSiamese',
   'Полосатый': 'colorTabby',
-  'Черепаховый': 'colorTortoiseshell',
-  'Шоколадный': 'colorChocolate',
-  'Кремовый': 'colorCream',
   'Двухцветный': 'colorBicolor'
 };
 
@@ -71,9 +65,6 @@ const COLOR_EXAMPLES = {
   'Трехцветный': '/assets/cats/calico.png',
   'Сиамский': '/assets/cats/siamese.png',
   'Полосатый': 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=200&auto=format&fit=crop',
-  'Черепаховый': 'https://images.unsplash.com/photo-1606214174585-fe31582d63e6?q=80&w=200&auto=format&fit=crop',
-  'Шоколадный': 'https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?q=80&w=200&auto=format&fit=crop',
-  'Кремовый': 'https://images.unsplash.com/photo-1592194996308-7b43878e84a6?q=80&w=200&auto=format&fit=crop',
   'Двухцветный': '/assets/cats/white_grey.png'
 };
 

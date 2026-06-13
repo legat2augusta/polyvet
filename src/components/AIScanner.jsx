@@ -11,9 +11,6 @@ const COLOR_KEYS = {
   'Трехцветный': 'colorCalico',
   'Сиамский': 'colorSiamese',
   'Полосатый': 'colorTabby',
-  'Черепаховый': 'colorTortoiseshell',
-  'Шоколадный': 'colorChocolate',
-  'Кремовый': 'colorCream',
   'Двухцветный': 'colorBicolor'
 };
 
