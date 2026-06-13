@@ -9,7 +9,12 @@ const COLOR_KEYS = {
   'Белый': 'colorWhite',
   'Серый': 'colorGrey',
   'Трехцветный': 'colorCalico',
-  'Сиамский': 'colorSiamese'
+  'Сиамский': 'colorSiamese',
+  'Полосатый': 'colorTabby',
+  'Черепаховый': 'colorTortoiseshell',
+  'Шоколадный': 'colorChocolate',
+  'Кремовый': 'colorCream',
+  'Двухцветный': 'colorBicolor'
 };
 
 const DISTRICT_KEYS = {

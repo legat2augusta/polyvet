@@ -106,6 +106,11 @@ export const translations = {
     colorGrey: "Серый",
     colorCalico: "Трехцветный",
     colorSiamese: "Сиамский",
+    colorTabby: "Полосатый",
+    colorTortoiseshell: "Черепаховый",
+    colorChocolate: "Шоколадный / Коричневый",
+    colorCream: "Кремовый / Бежевый",
+    colorBicolor: "Двухцветный (биколор)",
 
     // Added for bilingual support
     photoMain: "Главная",
@@ -164,7 +169,14 @@ export const translations = {
     tagNeutered: "Стерилизован(а)",
     tagLongHair: "Длинношерстный(ая)",
     tagShortHair: "Короткошерстный(ая)",
-    labelCommonTags: "Общие признаки:"
+    labelCommonTags: "Общие признаки:",
+    filterAgeLabel: "Возраст",
+    filterAgeAny: "Любой возраст",
+    filterHairLabel: "Длина шерсти",
+    filterHairAny: "Любая длина",
+    filterCollarLabel: "Ошейник",
+    filterCollarAny: "Неважно",
+    filterCollarYes: "В ошейнике",
   },
   kk: {
     // Header & Footer
@@ -273,6 +285,11 @@ export const translations = {
     colorGrey: "Серый (Сұр)",
     colorCalico: "Трехцветный (Үш түсті)",
     colorSiamese: "Сиамский (Сиам)",
+    colorTabby: "Полосатый (Жолақты)",
+    colorTortoiseshell: "Черепаховый (Тасбақа түсті)",
+    colorChocolate: "Шоколад / Қоңыр (Шоколадный / Коричневый)",
+    colorCream: "Крем түсті (Кремовый / Бежевый)",
+    colorBicolor: "Екі түсті (Двухцветный / биколор)",
 
     // Added for bilingual support
     photoMain: "Басты",
@@ -331,7 +348,14 @@ export const translations = {
     tagNeutered: "Стерилденген",
     tagLongHair: "Ұзын жүнді",
     tagShortHair: "Қысқа жүнді",
-    labelCommonTags: "Ортақ белгілер:"
+    labelCommonTags: "Ортақ белгілер:",
+    filterAgeLabel: "Жасы",
+    filterAgeAny: "Кез келген жас",
+    filterHairLabel: "Жүн ұзындығы",
+    filterHairAny: "Кез келген ұзындық",
+    filterCollarLabel: "Қарғыбау",
+    filterCollarAny: "Маңызды емес",
+    filterCollarYes: "Қарғыбауы бар",
   }
 };
 

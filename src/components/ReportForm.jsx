@@ -22,7 +22,12 @@ const COLORS = [
   'Белый',
   'Серый',
   'Трехцветный',
-  'Сиамский'
+  'Сиамский',
+  'Полосатый',
+  'Черепаховый',
+  'Шоколадный',
+  'Кремовый',
+  'Двухцветный'
 ];
 
 const DEMO_PHOTOS = [
@@ -50,7 +55,12 @@ const COLOR_KEYS = {
   'Белый': 'colorWhite',
   'Серый': 'colorGrey',
   'Трехцветный': 'colorCalico',
-  'Сиамский': 'colorSiamese'
+  'Сиамский': 'colorSiamese',
+  'Полосатый': 'colorTabby',
+  'Черепаховый': 'colorTortoiseshell',
+  'Шоколадный': 'colorChocolate',
+  'Кремовый': 'colorCream',
+  'Двухцветный': 'colorBicolor'
 };
 
 const DEMO_KEYS = {

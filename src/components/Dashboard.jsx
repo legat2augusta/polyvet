@@ -21,7 +21,12 @@ const COLORS = [
   'Белый',
   'Серый',
   'Трехцветный',
-  'Сиамский'
+  'Сиамский',
+  'Полосатый',
+  'Черепаховый',
+  'Шоколадный',
+  'Кремовый',
+  'Двухцветный'
 ];
 
 const DISTRICT_KEYS = {
@@ -41,7 +46,12 @@ const COLOR_KEYS = {
   'Белый': 'colorWhite',
   'Серый': 'colorGrey',
   'Трехцветный': 'colorCalico',
-  'Сиамский': 'colorSiamese'
+  'Сиамский': 'colorSiamese',
+  'Полосатый': 'colorTabby',
+  'Черепаховый': 'colorTortoiseshell',
+  'Шоколадный': 'colorChocolate',
+  'Кремовый': 'colorCream',
+  'Двухцветный': 'colorBicolor'
 };
 
 export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, lang }) {
@@ -49,6 +59,9 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, 
   const [selectedDistrict, setSelectedDistrict] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
+  const [selectedAge, setSelectedAge] = useState('');
+  const [selectedHair, setSelectedHair] = useState('');
+  const [selectedCollar, setSelectedCollar] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showOnlyMyPosts, setShowOnlyMyPosts] = useState(false);
 
@@ -71,8 +84,11 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, 
     const matchesDistrict = selectedDistrict ? cat.district === selectedDistrict : true;
     const matchesStatus = selectedStatus ? cat.status === selectedStatus : true;
     const matchesColor = selectedColor ? cat.color === selectedColor : true;
+    const matchesAge = !selectedAge ? true : (cat.tags && cat.tags.includes(selectedAge));
+    const matchesHair = !selectedHair ? true : (cat.tags && cat.tags.includes(selectedHair));
+    const matchesCollar = !selectedCollar ? true : (cat.tags && cat.tags.includes(selectedCollar));
     
-    return matchesSearch && matchesDistrict && matchesStatus && matchesColor;
+    return matchesSearch && matchesDistrict && matchesStatus && matchesColor && matchesAge && matchesHair && matchesCollar;
   });
 
   return (
@@ -189,7 +205,7 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, 
         {showFilters && (
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
             gap: '16px',
             marginTop: '20px',
             paddingTop: '20px',
@@ -222,6 +238,48 @@ export default function Dashboard({ cats, onScan, onNavigateToReport, onDelete, 
                 {COLORS.map(c => (
                   <option key={c} value={c}>{getTranslation(COLOR_KEYS[c], lang)}</option>
                 ))}
+              </select>
+            </div>
+
+            {/* Age Filter */}
+            <div className="input-group">
+              <span className="input-label">{getTranslation('filterAgeLabel', lang)}</span>
+              <select 
+                value={selectedAge}
+                onChange={(e) => setSelectedAge(e.target.value)}
+                className="form-select"
+              >
+                <option value="">{getTranslation('filterAgeAny', lang)}</option>
+                <option value="kitten">{getTranslation('tagKitten', lang)}</option>
+                <option value="adult">{getTranslation('tagAdult', lang)}</option>
+                <option value="senior">{getTranslation('tagSenior', lang)}</option>
+              </select>
+            </div>
+
+            {/* Hair length Filter */}
+            <div className="input-group">
+              <span className="input-label">{getTranslation('filterHairLabel', lang)}</span>
+              <select 
+                value={selectedHair}
+                onChange={(e) => setSelectedHair(e.target.value)}
+                className="form-select"
+              >
+                <option value="">{getTranslation('filterHairAny', lang)}</option>
+                <option value="longhair">{getTranslation('tagLongHair', lang)}</option>
+                <option value="shorthair">{getTranslation('tagShortHair', lang)}</option>
+              </select>
+            </div>
+
+            {/* Collar Filter */}
+            <div className="input-group">
+              <span className="input-label">{getTranslation('filterCollarLabel', lang)}</span>
+              <select 
+                value={selectedCollar}
+                onChange={(e) => setSelectedCollar(e.target.value)}
+                className="form-select"
+              >
+                <option value="">{getTranslation('filterCollarAny', lang)}</option>
+                <option value="collar">{getTranslation('filterCollarYes', lang)}</option>
               </select>
             </div>
           </div>
